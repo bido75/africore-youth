@@ -1287,6 +1287,428 @@ async def get_project_comments(project_id: str, current_user: dict = Depends(get
     
     return {"comments": comments}
 
+# Civic Engagement Endpoints
+@app.post("/api/policies")
+async def create_policy(policy: PolicyProposal, current_user: dict = Depends(get_current_user)):
+    policy_id = str(uuid.uuid4())
+    policy_doc = {
+        "policy_id": policy_id,
+        "creator_id": current_user["user_id"],
+        "title": policy.title,
+        "description": policy.description,
+        "category": policy.category,
+        "proposal_type": policy.proposal_type,
+        "target_location": policy.target_location,
+        "expected_impact": policy.expected_impact,
+        "implementation_timeline": policy.implementation_timeline,
+        "resources_needed": policy.resources_needed,
+        "supporting_documents": policy.supporting_documents,
+        "status": PolicyStatus.OPEN_FOR_FEEDBACK,
+        "support_votes": 0,
+        "oppose_votes": 0,
+        "neutral_votes": 0,
+        "feedback_count": 0,
+        "engagement_score": 0,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
+        "feedback_deadline": datetime.utcnow() + timedelta(days=30)  # 30 days for feedback
+    }
+    
+    policies_collection.insert_one(policy_doc)
+    
+    # Award participation points
+    await award_participation_points(current_user["user_id"], "policy_creation", 50)
+    
+    return {"message": "Policy proposal submitted successfully", "policy_id": policy_id}
+
+@app.get("/api/policies")
+async def get_policies(skip: int = 0, limit: int = 20, category: Optional[str] = None,
+                      status: Optional[str] = None, location: Optional[str] = None,
+                      current_user: dict = Depends(get_current_user)):
+    query = {}
+    if category:
+        query["category"] = category
+    if status:
+        query["status"] = status
+    else:
+        query["status"] = {"$in": ["open_for_feedback", "under_review", "approved", "implemented"]}
+    if location:
+        query["target_location"] = {"$regex": location, "$options": "i"}
+    
+    policies_cursor = policies_collection.find(query).skip(skip).limit(limit).sort("created_at", -1)
+    policies = []
+    
+    for policy in policies_cursor:
+        # Get creator info
+        creator = users_collection.find_one({"user_id": policy["creator_id"]})
+        
+        # Check if current user has voted
+        user_vote = policy_votes_collection.find_one({
+            "policy_id": policy["policy_id"],
+            "voter_id": current_user["user_id"]
+        })
+        
+        policy_data = {
+            "policy_id": policy["policy_id"],
+            "title": policy["title"],
+            "description": policy["description"],
+            "category": policy["category"],
+            "proposal_type": policy["proposal_type"],
+            "target_location": policy["target_location"],
+            "expected_impact": policy["expected_impact"],
+            "status": policy["status"],
+            "support_votes": policy.get("support_votes", 0),
+            "oppose_votes": policy.get("oppose_votes", 0),
+            "neutral_votes": policy.get("neutral_votes", 0),
+            "feedback_count": policy.get("feedback_count", 0),
+            "engagement_score": policy.get("engagement_score", 0),
+            "created_at": policy["created_at"],
+            "feedback_deadline": policy.get("feedback_deadline"),
+            "creator_name": creator["full_name"] if creator else "Unknown",
+            "creator_country": creator["country"] if creator else "Unknown",
+            "user_vote": user_vote["vote_type"] if user_vote else None,
+            "days_left": (policy.get("feedback_deadline") - datetime.utcnow()).days if policy.get("feedback_deadline") else 0
+        }
+        policies.append(policy_data)
+    
+    return {"policies": policies}
+
+@app.get("/api/policies/{policy_id}")
+async def get_policy(policy_id: str, current_user: dict = Depends(get_current_user)):
+    policy = policies_collection.find_one({"policy_id": policy_id})
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    
+    # Get creator info
+    creator = users_collection.find_one({"user_id": policy["creator_id"]})
+    
+    # Get recent feedback
+    recent_feedback = list(policy_feedback_collection.find({
+        "policy_id": policy_id
+    }).sort("created_at", -1).limit(10))
+    
+    for feedback in recent_feedback:
+        feedback_giver = users_collection.find_one({"user_id": feedback["feedback_giver_id"]})
+        feedback["feedback_giver_name"] = feedback_giver["full_name"] if feedback_giver else "Anonymous"
+        feedback["feedback_giver_country"] = feedback_giver["country"] if feedback_giver else ""
+    
+    # Check if current user has voted
+    user_vote = policy_votes_collection.find_one({
+        "policy_id": policy_id,
+        "voter_id": current_user["user_id"]
+    })
+    
+    policy_data = {
+        "policy_id": policy["policy_id"],
+        "title": policy["title"],
+        "description": policy["description"],
+        "category": policy["category"],
+        "proposal_type": policy["proposal_type"],
+        "target_location": policy["target_location"],
+        "expected_impact": policy["expected_impact"],
+        "implementation_timeline": policy.get("implementation_timeline", ""),
+        "resources_needed": policy.get("resources_needed", ""),
+        "supporting_documents": policy.get("supporting_documents", []),
+        "status": policy["status"],
+        "support_votes": policy.get("support_votes", 0),
+        "oppose_votes": policy.get("oppose_votes", 0),
+        "neutral_votes": policy.get("neutral_votes", 0),
+        "feedback_count": policy.get("feedback_count", 0),
+        "engagement_score": policy.get("engagement_score", 0),
+        "created_at": policy["created_at"],
+        "feedback_deadline": policy.get("feedback_deadline"),
+        "creator_id": policy["creator_id"],
+        "creator_name": creator["full_name"] if creator else "Unknown",
+        "creator_country": creator["country"] if creator else "Unknown",
+        "creator_bio": creator.get("bio", "") if creator else "",
+        "user_vote": user_vote["vote_type"] if user_vote else None,
+        "days_left": (policy.get("feedback_deadline") - datetime.utcnow()).days if policy.get("feedback_deadline") else 0,
+        "recent_feedback": recent_feedback
+    }
+    
+    return policy_data
+
+@app.post("/api/policies/{policy_id}/vote")
+async def vote_on_policy(policy_id: str, vote: PolicyVote, current_user: dict = Depends(get_current_user)):
+    # Check if policy exists
+    policy = policies_collection.find_one({"policy_id": policy_id})
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    
+    if policy["status"] not in ["open_for_feedback", "under_review"]:
+        raise HTTPException(status_code=400, detail="Policy is not accepting votes")
+    
+    # Check if user has already voted
+    existing_vote = policy_votes_collection.find_one({
+        "policy_id": policy_id,
+        "voter_id": current_user["user_id"]
+    })
+    
+    if existing_vote:
+        # Update existing vote
+        old_vote = existing_vote["vote_type"]
+        policy_votes_collection.update_one(
+            {"vote_id": existing_vote["vote_id"]},
+            {
+                "$set": {
+                    "vote_type": vote.vote_type,
+                    "comment": vote.comment,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Update policy vote counts
+        policies_collection.update_one(
+            {"policy_id": policy_id},
+            {
+                "$inc": {
+                    f"{old_vote}_votes": -1,
+                    f"{vote.vote_type}_votes": 1
+                }
+            }
+        )
+    else:
+        # Create new vote
+        vote_id = str(uuid.uuid4())
+        vote_doc = {
+            "vote_id": vote_id,
+            "policy_id": policy_id,
+            "voter_id": current_user["user_id"],
+            "vote_type": vote.vote_type,
+            "comment": vote.comment,
+            "created_at": datetime.utcnow()
+        }
+        
+        policy_votes_collection.insert_one(vote_doc)
+        
+        # Update policy vote counts
+        policies_collection.update_one(
+            {"policy_id": policy_id},
+            {"$inc": {f"{vote.vote_type}_votes": 1}}
+        )
+    
+    # Award participation points
+    await award_participation_points(current_user["user_id"], "policy_vote", 10)
+    
+    return {"message": "Vote recorded successfully"}
+
+@app.post("/api/policies/{policy_id}/feedback")
+async def give_policy_feedback(policy_id: str, feedback: PolicyFeedback, current_user: dict = Depends(get_current_user)):
+    # Check if policy exists
+    policy = policies_collection.find_one({"policy_id": policy_id})
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    
+    if policy["status"] not in ["open_for_feedback", "under_review"]:
+        raise HTTPException(status_code=400, detail="Policy is not accepting feedback")
+    
+    feedback_id = str(uuid.uuid4())
+    feedback_doc = {
+        "feedback_id": feedback_id,
+        "policy_id": policy_id,
+        "feedback_giver_id": current_user["user_id"],
+        "feedback_type": feedback.feedback_type,
+        "content": feedback.content,
+        "impact_assessment": feedback.impact_assessment,
+        "alternative_suggestion": feedback.alternative_suggestion,
+        "helpful_votes": 0,
+        "created_at": datetime.utcnow()
+    }
+    
+    policy_feedback_collection.insert_one(feedback_doc)
+    
+    # Update policy feedback count
+    policies_collection.update_one(
+        {"policy_id": policy_id},
+        {"$inc": {"feedback_count": 1}}
+    )
+    
+    # Award participation points
+    await award_participation_points(current_user["user_id"], "policy_feedback", 25)
+    
+    return {"message": "Feedback submitted successfully", "feedback_id": feedback_id}
+
+@app.get("/api/policies/{policy_id}/feedback")
+async def get_policy_feedback(policy_id: str, current_user: dict = Depends(get_current_user)):
+    feedback_cursor = policy_feedback_collection.find({
+        "policy_id": policy_id
+    }).sort("created_at", -1)
+    
+    feedback_list = []
+    for feedback in feedback_cursor:
+        feedback_giver = users_collection.find_one({"user_id": feedback["feedback_giver_id"]})
+        feedback_data = {
+            "feedback_id": feedback["feedback_id"],
+            "feedback_type": feedback["feedback_type"],
+            "content": feedback["content"],
+            "impact_assessment": feedback.get("impact_assessment", ""),
+            "alternative_suggestion": feedback.get("alternative_suggestion", ""),
+            "helpful_votes": feedback.get("helpful_votes", 0),
+            "created_at": feedback["created_at"],
+            "feedback_giver_name": feedback_giver["full_name"] if feedback_giver else "Anonymous",
+            "feedback_giver_country": feedback_giver["country"] if feedback_giver else ""
+        }
+        feedback_list.append(feedback_data)
+    
+    return {"feedback": feedback_list}
+
+@app.get("/api/civic/my-participation")
+async def get_my_civic_participation(current_user: dict = Depends(get_current_user)):
+    # Get user's participation points
+    points_doc = participation_points_collection.find_one({"user_id": current_user["user_id"]})
+    total_points = points_doc.get("total_points", 0) if points_doc else 0
+    
+    # Get user's policies
+    my_policies = list(policies_collection.find({"creator_id": current_user["user_id"]}))
+    
+    # Get user's votes
+    my_votes = list(policy_votes_collection.find({"voter_id": current_user["user_id"]}))
+    
+    # Get user's feedback
+    my_feedback = list(policy_feedback_collection.find({"feedback_giver_id": current_user["user_id"]}))
+    
+    # Calculate participation level
+    participation_level = "bronze"
+    if total_points >= 1000:
+        participation_level = "platinum"
+    elif total_points >= 500:
+        participation_level = "gold"
+    elif total_points >= 200:
+        participation_level = "silver"
+    
+    participation_data = {
+        "total_points": total_points,
+        "participation_level": participation_level,
+        "policies_created": len(my_policies),
+        "votes_cast": len(my_votes),
+        "feedback_given": len(my_feedback),
+        "recent_policies": [
+            {
+                "policy_id": policy["policy_id"],
+                "title": policy["title"],
+                "status": policy["status"],
+                "support_votes": policy.get("support_votes", 0),
+                "oppose_votes": policy.get("oppose_votes", 0),
+                "created_at": policy["created_at"]
+            } for policy in my_policies[:5]
+        ]
+    }
+    
+    return participation_data
+
+@app.get("/api/civic/leaderboard")
+async def get_civic_leaderboard(limit: int = 10, current_user: dict = Depends(get_current_user)):
+    # Get top participants by points
+    leaderboard_cursor = participation_points_collection.find().sort("total_points", -1).limit(limit)
+    
+    leaderboard = []
+    rank = 1
+    for participant in leaderboard_cursor:
+        user = users_collection.find_one({"user_id": participant["user_id"]})
+        if user:
+            leaderboard_data = {
+                "rank": rank,
+                "user_id": participant["user_id"],
+                "user_name": user["full_name"],
+                "user_country": user["country"],
+                "total_points": participant["total_points"],
+                "participation_level": participant.get("participation_level", "bronze"),
+                "policies_created": participant.get("policies_created", 0),
+                "votes_cast": participant.get("votes_cast", 0),
+                "feedback_given": participant.get("feedback_given", 0)
+            }
+            leaderboard.append(leaderboard_data)
+            rank += 1
+    
+    return {"leaderboard": leaderboard}
+
+# Civic Forums Endpoints
+@app.post("/api/civic-forums")
+async def create_civic_forum(forum: CivicForum, current_user: dict = Depends(get_current_user)):
+    forum_id = str(uuid.uuid4())
+    forum_doc = {
+        "forum_id": forum_id,
+        "creator_id": current_user["user_id"],
+        "title": forum.title,
+        "description": forum.description,
+        "category": forum.category,
+        "location": forum.location,
+        "moderators": [current_user["user_id"]] + forum.moderators,
+        "post_count": 0,
+        "member_count": 1,
+        "active": True,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    civic_forums_collection.insert_one(forum_doc)
+    
+    # Award participation points
+    await award_participation_points(current_user["user_id"], "forum_creation", 30)
+    
+    return {"message": "Civic forum created successfully", "forum_id": forum_id}
+
+@app.get("/api/civic-forums")
+async def get_civic_forums(skip: int = 0, limit: int = 20, category: Optional[str] = None,
+                          location: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    query = {"active": True}
+    if category:
+        query["category"] = category
+    if location:
+        query["location"] = {"$regex": location, "$options": "i"}
+    
+    forums_cursor = civic_forums_collection.find(query).skip(skip).limit(limit).sort("updated_at", -1)
+    forums = []
+    
+    for forum in forums_cursor:
+        creator = users_collection.find_one({"user_id": forum["creator_id"]})
+        forum_data = {
+            "forum_id": forum["forum_id"],
+            "title": forum["title"],
+            "description": forum["description"],
+            "category": forum["category"],
+            "location": forum["location"],
+            "post_count": forum.get("post_count", 0),
+            "member_count": forum.get("member_count", 0),
+            "created_at": forum["created_at"],
+            "updated_at": forum["updated_at"],
+            "creator_name": creator["full_name"] if creator else "Unknown"
+        }
+        forums.append(forum_data)
+    
+    return {"forums": forums}
+
+# Helper function for awarding participation points
+async def award_participation_points(user_id: str, activity_type: str, points: int):
+    # Update or create participation points record
+    participation_points_collection.update_one(
+        {"user_id": user_id},
+        {
+            "$inc": {"total_points": points},
+            "$set": {"updated_at": datetime.utcnow()},
+            "$setOnInsert": {"user_id": user_id, "created_at": datetime.utcnow()}
+        },
+        upsert=True
+    )
+    
+    # Update activity-specific counters
+    if activity_type == "policy_creation":
+        participation_points_collection.update_one(
+            {"user_id": user_id},
+            {"$inc": {"policies_created": 1}}
+        )
+    elif activity_type == "policy_vote":
+        participation_points_collection.update_one(
+            {"user_id": user_id},
+            {"$inc": {"votes_cast": 1}}
+        )
+    elif activity_type == "policy_feedback":
+        participation_points_collection.update_one(
+            {"user_id": user_id},
+            {"$inc": {"feedback_given": 1}}
+        )
+
 # Message endpoints (existing)
 @app.post("/api/messages")
 async def send_message(message: Message, current_user: dict = Depends(get_current_user)):
