@@ -333,6 +333,423 @@ function FundingView({ token, user, setCurrentView }) {
   );
 }
 
+function MyProjectsView({ token, setCurrentView }) {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMyProjects();
+  }, []);
+
+  const fetchMyProjects = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/projects/my`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data.projects);
+      }
+    } catch (error) {
+      console.error('Error fetching my projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'draft': 'bg-gray-100 text-gray-800',
+      'pending_approval': 'bg-yellow-100 text-yellow-800',
+      'active': 'bg-green-100 text-green-800',
+      'funded': 'bg-blue-100 text-blue-800',
+      'in_progress': 'bg-purple-100 text-purple-800',
+      'completed': 'bg-emerald-100 text-emerald-800',
+      'cancelled': 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">📊 My Projects</h2>
+          <button
+            onClick={() => setCurrentView('create-project')}
+            className="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+          >
+            Create New Project
+          </button>
+        </div>
+        
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading your projects...</p>
+          </div>
+        ) : projects.length > 0 ? (
+          <div className="space-y-6">
+            {projects.map((project) => (
+              <div key={project.project_id} className="border border-gray-200 rounded-lg p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{project.title}</h3>
+                    <div className="flex items-center space-x-4 mb-2">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(project.status)}`}>
+                        {project.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                      <span className="text-gray-600 text-sm">{project.category}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 md:mt-0 text-right">
+                    <p className="text-2xl font-bold text-green-600">${project.current_funding.toLocaleString()}</p>
+                    <p className="text-sm text-gray-600">of ${project.funding_goal.toLocaleString()} goal</p>
+                  </div>
+                </div>
+                
+                {/* Funding Progress */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-600">Funding Progress</span>
+                    <span className="font-semibold">{Math.round(project.funding_percentage)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className="bg-green-500 h-3 rounded-full" 
+                      style={{width: `${Math.min(project.funding_percentage, 100)}%`}}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-600">Contributors</p>
+                    <p className="font-semibold">{project.contributor_count}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Days Left</p>
+                    <p className="font-semibold">{project.days_left > 0 ? project.days_left : 'Ended'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Created</p>
+                    <p className="font-semibold">{new Date(project.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Category</p>
+                    <p className="font-semibold">{project.category}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🚀</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No Projects Yet</h3>
+            <p className="text-gray-600 mb-6">Start your journey by creating your first impactful project.</p>
+            <button
+              onClick={() => setCurrentView('create-project')}
+              className="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+            >
+              Create Your First Project
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CreateProjectView({ token, setCurrentView }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    funding_goal: '',
+    funding_goal_type: 'fixed',
+    duration_months: '',
+    location: '',
+    impact_description: '',
+    budget_breakdown: '',
+    milestones: '',
+    images: '',
+    team_members: '',
+    risks_challenges: '',
+    sustainability_plan: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const submitData = {
+        ...formData,
+        funding_goal: parseFloat(formData.funding_goal),
+        duration_months: parseInt(formData.duration_months),
+        milestones: formData.milestones.split('\n').filter(m => m.trim()),
+        images: formData.images.split(',').map(img => img.trim()).filter(img => img)
+      };
+
+      const response = await fetch(`${API_URL}/api/projects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(submitData)
+      });
+
+      if (response.ok) {
+        alert('Project submitted successfully! It will be reviewed before going live.');
+        setCurrentView('my-projects');
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Failed to create project');
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      alert('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">🌱 Create Impact Project</h2>
+          <p className="text-gray-600">Share your vision for positive change in Africa. Create a project that can attract funding and support from the community.</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Project Title *</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="e.g., Solar Power for Rural Schools in Kenya"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Project Description *</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              required
+              rows="6"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="Describe your project, its goals, and how it will create positive impact..."
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">Select category</option>
+                <option value="education">Education</option>
+                <option value="technology">Technology</option>
+                <option value="agriculture">Agriculture</option>
+                <option value="health">Health</option>
+                <option value="environment">Environment</option>
+                <option value="arts_culture">Arts & Culture</option>
+                <option value="social_impact">Social Impact</option>
+                <option value="entrepreneurship">Entrepreneurship</option>
+                <option value="infrastructure">Infrastructure</option>
+                <option value="climate_action">Climate Action</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Funding Goal (USD) *</label>
+              <input
+                type="number"
+                name="funding_goal"
+                value={formData.funding_goal}
+                onChange={handleChange}
+                required
+                min="100"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="5000"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Duration (Months) *</label>
+              <input
+                type="number"
+                name="duration_months"
+                value={formData.duration_months}
+                onChange={handleChange}
+                required
+                min="1"
+                max="36"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="12"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="e.g., Lagos, Nigeria"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Funding Type *</label>
+              <select
+                name="funding_goal_type"
+                value={formData.funding_goal_type}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="fixed">Fixed Goal (All-or-nothing)</option>
+                <option value="flexible">Flexible Goal (Keep what you raise)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Impact Description *</label>
+            <textarea
+              name="impact_description"
+              value={formData.impact_description}
+              onChange={handleChange}
+              required
+              rows="4"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="Describe the specific impact your project will have on the community..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Budget Breakdown *</label>
+            <textarea
+              name="budget_breakdown"
+              value={formData.budget_breakdown}
+              onChange={handleChange}
+              required
+              rows="4"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="Provide a detailed breakdown of how funds will be used..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Project Milestones (one per line) *</label>
+            <textarea
+              name="milestones"
+              value={formData.milestones}
+              onChange={handleChange}
+              required
+              rows="4"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="Month 1: Complete site survey&#10;Month 3: Install solar panels&#10;Month 6: Train local technicians"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Team Members (optional)</label>
+            <textarea
+              name="team_members"
+              value={formData.team_members}
+              onChange={handleChange}
+              rows="3"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="Describe your team and their qualifications..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Risks & Challenges (optional)</label>
+            <textarea
+              name="risks_challenges"
+              value={formData.risks_challenges}
+              onChange={handleChange}
+              rows="3"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="What risks do you foresee and how will you address them?"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Sustainability Plan (optional)</label>
+            <textarea
+              name="sustainability_plan"
+              value={formData.sustainability_plan}
+              onChange={handleChange}
+              rows="3"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="How will the project continue to create impact after funding ends?"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Project Images (URLs, comma-separated) (optional)</label>
+            <input
+              type="text"
+              name="images"
+              value={formData.images}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+            />
+          </div>
+
+          <div className="flex space-x-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-green-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Creating Project...' : 'Submit Project'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentView('funding')}
+              className="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function AuthScreen({ setToken, setUser }) {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
