@@ -125,6 +125,43 @@ class FundingGoalType(str, Enum):
     FIXED = "fixed"
     FLEXIBLE = "flexible"
 
+class PolicyCategory(str, Enum):
+    EDUCATION = "education"
+    HEALTHCARE = "healthcare"
+    ECONOMY = "economy"
+    ENVIRONMENT = "environment"
+    YOUTH_DEVELOPMENT = "youth_development"
+    INFRASTRUCTURE = "infrastructure"
+    TECHNOLOGY = "technology"
+    AGRICULTURE = "agriculture"
+    GOVERNANCE = "governance"
+    SOCIAL_JUSTICE = "social_justice"
+
+class PolicyStatus(str, Enum):
+    DRAFT = "draft"
+    OPEN_FOR_FEEDBACK = "open_for_feedback"
+    UNDER_REVIEW = "under_review"
+    APPROVED = "approved"
+    IMPLEMENTED = "implemented"
+    REJECTED = "rejected"
+
+class ProposalType(str, Enum):
+    GOVERNMENT_POLICY = "government_policy"
+    YOUTH_INITIATIVE = "youth_initiative"
+    COMMUNITY_PROJECT = "community_project"
+    POLICY_SUGGESTION = "policy_suggestion"
+
+class VoteType(str, Enum):
+    SUPPORT = "support"
+    OPPOSE = "oppose"
+    NEUTRAL = "neutral"
+
+class ParticipationLevel(str, Enum):
+    BRONZE = "bronze"
+    SILVER = "silver"
+    GOLD = "gold"
+    PLATINUM = "platinum"
+
 # Pydantic models
 class UserRegister(BaseModel):
     email: EmailStr
