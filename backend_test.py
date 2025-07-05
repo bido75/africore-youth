@@ -21,6 +21,7 @@ class AfriCoreAPITest(unittest.TestCase):
         cls.user_id = None
         cls.other_user_id = None
         cls.connection_id = None
+        cls.project_id = None
 
     def test_01_health_check(self):
         """Test the health check endpoint"""
