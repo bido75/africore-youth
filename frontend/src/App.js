@@ -326,12 +326,12 @@ function Header({ user, logout, currentView, setCurrentView }) {
                 Connections
               </button>
               <button
-                onClick={() => setCurrentView('organization')}
+                onClick={() => setCurrentView('funding')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'organization' ? 'bg-green-500 text-white' : 'text-gray-600 hover:text-green-600'
+                  currentView === 'funding' ? 'bg-green-500 text-white' : 'text-gray-600 hover:text-green-600'
                 }`}
               >
-                Organization
+                Funding
               </button>
             </div>
           </div>
