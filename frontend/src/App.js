@@ -57,7 +57,7 @@ function App() {
         {currentView === 'messages' && <MessagesView token={token} user={user} />}
         {currentView === 'jobs' && <JobsView token={token} user={user} setCurrentView={setCurrentView} />}
         {currentView === 'my-applications' && <MyApplicationsView token={token} />}
-        {currentView === 'organization' && <OrganizationView token={token} user={user} />}
+        {currentView === 'organization' && <OrganizationView token={token} user={user} setCurrentView={setCurrentView} />}
         {currentView === 'post-job' && <PostJobView token={token} setCurrentView={setCurrentView} />}
         {currentView === 'manage-applications' && <ManageApplicationsView token={token} />}
       </main>
