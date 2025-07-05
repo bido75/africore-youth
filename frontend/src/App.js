@@ -59,7 +59,10 @@ function App() {
         {currentView === 'my-applications' && <MyApplicationsView token={token} />}
         {currentView === 'organization' && <OrganizationView token={token} user={user} setCurrentView={setCurrentView} />}
         {currentView === 'post-job' && <PostJobView token={token} setCurrentView={setCurrentView} />}
-        {currentView === 'manage-applications' && <ManageApplicationsView token={token} />}
+        {currentView === 'funding' && <FundingView token={token} user={user} setCurrentView={setCurrentView} />}
+        {currentView === 'my-projects' && <MyProjectsView token={token} setCurrentView={setCurrentView} />}
+        {currentView === 'create-project' && <CreateProjectView token={token} setCurrentView={setCurrentView} />}
+        {currentView === 'my-contributions' && <MyContributionsView token={token} />}
       </main>
     </div>
   );
