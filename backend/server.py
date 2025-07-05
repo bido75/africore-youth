@@ -60,6 +60,15 @@ try:
     forum_posts_collection = db.forum_posts
     civic_achievements_collection = db.civic_achievements
     participation_points_collection = db.participation_points
+    courses_collection = db.courses
+    course_modules_collection = db.course_modules
+    course_lessons_collection = db.course_lessons
+    enrollments_collection = db.enrollments
+    certificates_collection = db.certificates
+    mentorships_collection = db.mentorships
+    learning_progress_collection = db.learning_progress
+    course_reviews_collection = db.course_reviews
+    skill_assessments_collection = db.skill_assessments
     logger.info("MongoDB connected successfully")
 except Exception as e:
     logger.error(f"Failed to connect to MongoDB: {e}")
