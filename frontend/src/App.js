@@ -1819,83 +1819,538 @@ function OrganizationView({ token, user }) {
   );
 }
 
-function OrganizationDashboard({ organization, token }) {
+function PostJobView({ token, setCurrentView }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    requirements: '',
+    job_type: '',
+    job_category: '',
+    location_type: '',
+    location: '',
+    salary_range: '',
+    deadline: '',
+    skills_required: '',
+    experience_level: '',
+    benefits: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const submitData = {
+        ...formData,
+        requirements: formData.requirements.split('\n').filter(req => req.trim()),
+        skills_required: formData.skills_required.split(',').map(s => s.trim()).filter(s => s),
+        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null
+      };
+
+      const response = await fetch(`${API_URL}/api/jobs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(submitData)
+      });
+
+      if (response.ok) {
+        alert('Job posted successfully!');
+        setCurrentView('organization');
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Failed to post job');
+      }
+    } catch (error) {
+      console.error('Error posting job:', error);
+      alert('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">📝 Post New Job Opportunity</h2>
+          <p className="text-gray-600">Create an amazing opportunity for African youth to discover and apply.</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Job Title *</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="e.g., Frontend Developer, Marketing Manager"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Job Description *</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              required
+              rows="6"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Requirements (one per line) *</label>
+            <textarea
+              name="requirements"
+              value={formData.requirements}
+              onChange={handleChange}
+              required
+              rows="4"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Bachelor's degree in relevant field&#10;2+ years of experience&#10;Strong communication skills"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Job Type *</label>
+              <select
+                name="job_type"
+                value={formData.job_type}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select type</option>
+                <option value="full_time">Full Time</option>
+                <option value="part_time">Part Time</option>
+                <option value="internship">Internship</option>
+                <option value="gig_work">Gig Work</option>
+                <option value="project">Project</option>
+                <option value="volunteer">Volunteer</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+              <select
+                name="job_category"
+                value={formData.job_category}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select category</option>
+                <option value="technology">Technology</option>
+                <option value="agriculture">Agriculture</option>
+                <option value="education">Education</option>
+                <option value="health">Health</option>
+                <option value="environment">Environment</option>
+                <option value="finance">Finance</option>
+                <option value="arts">Arts</option>
+                <option value="business">Business</option>
+                <option value="engineering">Engineering</option>
+                <option value="social_work">Social Work</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location Type *</label>
+              <select
+                name="location_type"
+                value={formData.location_type}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select type</option>
+                <option value="remote">Remote</option>
+                <option value="on_site">On Site</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Lagos, Nigeria or Remote"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Salary Range (optional)</label>
+              <input
+                type="text"
+                name="salary_range"
+                value={formData.salary_range}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., $30,000 - $50,000"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Required Skills (comma-separated) *</label>
+            <input
+              type="text"
+              name="skills_required"
+              value={formData.skills_required}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="React, JavaScript, Communication, Leadership"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Experience Level (optional)</label>
+              <select
+                name="experience_level"
+                value={formData.experience_level}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select level</option>
+                <option value="Entry Level">Entry Level</option>
+                <option value="Mid Level">Mid Level</option>
+                <option value="Senior Level">Senior Level</option>
+                <option value="Executive">Executive</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Application Deadline (optional)</label>
+              <input
+                type="date"
+                name="deadline"
+                value={formData.deadline}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Benefits & Perks (optional)</label>
+            <textarea
+              name="benefits"
+              value={formData.benefits}
+              onChange={handleChange}
+              rows="3"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Health insurance, flexible hours, remote work, professional development..."
+            />
+          </div>
+
+          <div className="flex space-x-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-blue-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Posting Job...' : 'Post Job'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentView('organization')}
+              className="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function ManageApplicationsView({ token }) {
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  const fetchApplications = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/organization/applications`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setApplications(data.applications);
+      }
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateApplicationStatus = async (applicationId, status) => {
+    try {
+      const response = await fetch(`${API_URL}/api/applications/${applicationId}/status?status=${status}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        alert(`Application status updated to ${status}`);
+        fetchApplications(); // Refresh the list
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Failed to update application status');
+      }
+    } catch (error) {
+      console.error('Error updating application status:', error);
+      alert('Network error. Please try again.');
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'applied': 'bg-blue-100 text-blue-800',
+      'reviewed': 'bg-yellow-100 text-yellow-800',
+      'shortlisted': 'bg-purple-100 text-purple-800',
+      'interviewed': 'bg-orange-100 text-orange-800',
+      'accepted': 'bg-green-100 text-green-800',
+      'rejected': 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const formatStatus = (status) => {
+    return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
   return (
     <div className="space-y-6">
-      {/* Organization Header */}
-      <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-8 text-white">
-        <div className="flex items-center space-x-6">
-          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-green-600 text-2xl font-bold">
-            {organization.name.charAt(0)}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">📄 Manage Applications</h2>
+        
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading applications...</p>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">{organization.name}</h1>
-            <p className="text-xl opacity-90">{organization.organization_type} • {organization.country}</p>
-            {organization.verified && (
-              <span className="inline-flex items-center mt-2 px-3 py-1 bg-white/20 rounded-full text-sm">
-                ✅ Verified Organization
+        ) : applications.length > 0 ? (
+          <div className="space-y-6">
+            {applications.map((application) => (
+              <div key={application.application_id} className="border border-gray-200 rounded-lg p-6">
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800">{application.job_title}</h3>
+                        <p className="text-lg font-semibold text-gray-700">{application.applicant_name}</p>
+                        <p className="text-gray-600">{application.applicant_email} • {application.applicant_country}</p>
+                        <p className="text-sm text-gray-500">Applied on {new Date(application.applied_at).toLocaleDateString()}</p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(application.status)}`}>
+                        {formatStatus(application.status)}
+                      </span>
+                    </div>
+
+                    <div className="mb-4">
+                      <h4 className="font-semibold text-gray-800 mb-2">Applicant Skills</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {application.applicant_skills?.slice(0, 8).map((skill, index) => (
+                          <span key={index} className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                            {skill}
+                          </span>
+                        ))}
+                        {application.applicant_skills?.length > 8 && (
+                          <span className="text-orange-600 text-xs">+{application.applicant_skills.length - 8} more</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {application.cover_letter && (
+                      <div className="mb-4">
+                        <h4 className="font-semibold text-gray-800 mb-2">Cover Letter</h4>
+                        <p className="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg">{application.cover_letter}</p>
+                      </div>
+                    )}
+
+                    {application.portfolio_links && (
+                      <div className="mb-4">
+                        <h4 className="font-semibold text-gray-800 mb-2">Portfolio</h4>
+                        <a 
+                          href={application.portfolio_links} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          🔗 {application.portfolio_links}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => updateApplicationStatus(application.application_id, 'reviewed')}
+                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-600 transition-colors"
+                  >
+                    Mark as Reviewed
+                  </button>
+                  <button
+                    onClick={() => updateApplicationStatus(application.application_id, 'shortlisted')}
+                    className="bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-600 transition-colors"
+                  >
+                    Shortlist
+                  </button>
+                  <button
+                    onClick={() => updateApplicationStatus(application.application_id, 'interviewed')}
+                    className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors"
+                  >
+                    Interviewed
+                  </button>
+                  <button
+                    onClick={() => updateApplicationStatus(application.application_id, 'accepted')}
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-600 transition-colors"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => updateApplicationStatus(application.application_id, 'rejected')}
+                    className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📥</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No Applications Yet</h3>
+            <p className="text-gray-600">Applications will appear here once youth start applying to your job postings.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function JobCard({ job, onApply }) {
+  const formatJobType = (type) => {
+    return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  const formatCategory = (category) => {
+    return category.charAt(0).toUpperCase() + category.slice(1);
+  };
+
+  const getJobTypeColor = (type) => {
+    const colors = {
+      'full_time': 'bg-green-100 text-green-800',
+      'part_time': 'bg-blue-100 text-blue-800',
+      'internship': 'bg-purple-100 text-purple-800',
+      'gig_work': 'bg-orange-100 text-orange-800',
+      'project': 'bg-yellow-100 text-yellow-800',
+      'volunteer': 'bg-red-100 text-red-800'
+    };
+    return colors[type] || 'bg-gray-100 text-gray-800';
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+        <div className="flex-1">
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="text-xl font-bold text-gray-800">{job.title}</h3>
+            {job.match_score && (
+              <span className="ml-4 bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">
+                {job.match_score}% match
+              </span>
+            )}
+          </div>
+          <p className="text-gray-600 mb-2">{job.organization_name}</p>
+          <p className="text-sm text-gray-500 mb-3">{job.location}</p>
+          
+          <div className="flex flex-wrap gap-2 mb-3">
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getJobTypeColor(job.job_type)}`}>
+              {formatJobType(job.job_type)}
+            </span>
+            <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
+              {formatCategory(job.job_category)}
+            </span>
+            {job.salary_range && (
+              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                {job.salary_range}
               </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-md">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">📝 Post New Job</h3>
-          <p className="text-gray-600 mb-4">Create a new job opportunity for African youth.</p>
-          <button className="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors w-full">
-            Post Job
-          </button>
+      <p className="text-gray-600 mb-4 line-clamp-3">{job.description}</p>
+
+      <div className="mb-4">
+        <h4 className="font-semibold text-gray-800 mb-2">Required Skills</h4>
+        <div className="flex flex-wrap gap-2">
+          {job.skills_required?.slice(0, 5).map((skill, index) => (
+            <span key={index} className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+              {skill}
+            </span>
+          ))}
+          {job.skills_required?.length > 5 && (
+            <span className="text-orange-600 text-xs">+{job.skills_required.length - 5} more</span>
+          )}
         </div>
-        <div className="bg-white rounded-xl p-6 shadow-md">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">📄 Manage Applications</h3>
-          <p className="text-gray-600 mb-4">Review and manage job applications.</p>
-          <button className="bg-purple-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-600 transition-colors w-full">
-            View Applications
-          </button>
-        </div>
-        <div className="bg-white rounded-xl p-6 shadow-md">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">📊 Analytics</h3>
-          <p className="text-gray-600 mb-4">View job posting performance and metrics.</p>
-          <button className="bg-orange-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors w-full">
-            View Analytics
-          </button>
-        </div>
+        {job.matching_skills && job.matching_skills.length > 0 && (
+          <div className="mt-2">
+            <p className="text-sm text-green-600 font-medium">
+              ✅ You have: {job.matching_skills.join(', ')}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Organization Details */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Organization Details</h2>
-        <div className="space-y-4">
-          <div>
-            <h3 className="font-semibold text-gray-800 mb-2">Description</h3>
-            <p className="text-gray-600">{organization.description}</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-2">Contact Information</h3>
-              <div className="space-y-1 text-gray-600">
-                <p>📧 {organization.contact_email}</p>
-                {organization.contact_phone && <p>📞 {organization.contact_phone}</p>}
-                {organization.website && (
-                  <a href={organization.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
-                    🌐 {organization.website}
-                  </a>
-                )}
-              </div>
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-2">Organization Info</h3>
-              <div className="space-y-1 text-gray-600">
-                {organization.size && <p>👥 {organization.size}</p>}
-                {organization.founded_year && <p>📅 Founded in {organization.founded_year}</p>}
-                <p>📍 {organization.country}</p>
-              </div>
-            </div>
-          </div>
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-500">
+          Posted {new Date(job.created_at).toLocaleDateString()}
+          {job.deadline && (
+            <span className="ml-2">• Deadline: {new Date(job.deadline).toLocaleDateString()}</span>
+          )}
         </div>
+        <button
+          onClick={() => onApply(job.job_id)}
+          className="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+        >
+          Apply Now
+        </button>
       </div>
     </div>
   );
