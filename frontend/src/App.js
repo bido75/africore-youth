@@ -539,7 +539,10 @@ function ProfileView({ user, setUser, token }) {
     current_projects: user?.current_projects || '',
     languages: user?.languages?.join(', ') || '',
     phone: user?.phone || '',
-    linkedin: user?.linkedin || ''
+    linkedin: user?.linkedin || '',
+    work_experience: user?.work_experience || '',
+    portfolio_url: user?.portfolio_url || '',
+    availability: user?.availability || ''
   });
 
   const handleChange = (e) => {
@@ -592,6 +595,9 @@ function ProfileView({ user, setUser, token }) {
               <h1 className="text-3xl font-bold">{user?.full_name}</h1>
               <p className="text-xl opacity-90">{user?.country}</p>
               <p className="text-lg opacity-75">{user?.age} years old</p>
+              {user?.availability && (
+                <p className="text-sm opacity-75 mt-2">🟢 {user.availability}</p>
+              )}
             </div>
           </div>
         </div>
@@ -680,6 +686,48 @@ function ProfileView({ user, setUser, token }) {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="University, Degree, etc..."
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Work Experience</label>
+                <textarea
+                  name="work_experience"
+                  value={formData.work_experience}
+                  onChange={handleChange}
+                  rows="4"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  placeholder="Describe your work experience..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Portfolio URL</label>
+                  <input
+                    type="url"
+                    name="portfolio_url"
+                    value={formData.portfolio_url}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="https://yourportfolio.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
+                  <select
+                    name="availability"
+                    value={formData.availability}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  >
+                    <option value="">Select availability</option>
+                    <option value="Available for work">Available for work</option>
+                    <option value="Open to opportunities">Open to opportunities</option>
+                    <option value="Currently employed">Currently employed</option>
+                    <option value="Looking for internships">Looking for internships</option>
+                    <option value="Available for freelance">Available for freelance</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -803,6 +851,11 @@ function ProfileView({ user, setUser, token }) {
               </div>
 
               <div>
+                <h3 className="font-semibold text-gray-800 mb-2">Work Experience</h3>
+                <p className="text-gray-600">{user?.work_experience || 'No work experience provided'}</p>
+              </div>
+
+              <div>
                 <h3 className="font-semibold text-gray-800 mb-2">Goals & Aspirations</h3>
                 <p className="text-gray-600">{user?.goals || 'No goals specified'}</p>
               </div>
@@ -828,14 +881,19 @@ function ProfileView({ user, setUser, token }) {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">Contact</h3>
+                  <h3 className="font-semibold text-gray-800 mb-2">Contact & Links</h3>
                   <div className="space-y-2">
                     {user?.phone && (
                       <p className="text-gray-600">📞 {user.phone}</p>
                     )}
                     {user?.linkedin && (
-                      <a href={user.linkedin} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-800">
+                      <a href={user.linkedin} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-800 block">
                         🔗 LinkedIn Profile
+                      </a>
+                    )}
+                    {user?.portfolio_url && (
+                      <a href={user.portfolio_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 block">
+                        🌐 Portfolio
                       </a>
                     )}
                   </div>
