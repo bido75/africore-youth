@@ -67,6 +67,10 @@ function App() {
         {currentView === 'my-civic' && <MyCivicParticipationView token={token} setCurrentView={setCurrentView} />}
         {currentView === 'create-policy' && <CreatePolicyView token={token} setCurrentView={setCurrentView} />}
         {currentView === 'civic-forums' && <CivicForumsView token={token} setCurrentView={setCurrentView} />}
+        {currentView === 'education' && <EducationView token={token} user={user} setCurrentView={setCurrentView} />}
+        {currentView === 'my-courses' && <MyCoursesView token={token} setCurrentView={setCurrentView} />}
+        {currentView === 'create-course' && <CreateCourseView token={token} setCurrentView={setCurrentView} />}
+        {currentView === 'mentorship' && <MentorshipView token={token} setCurrentView={setCurrentView} />}
       </main>
     </div>
   );
