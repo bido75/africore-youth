@@ -1809,6 +1809,386 @@ async def award_participation_points(user_id: str, activity_type: str, points: i
             {"$inc": {"feedback_given": 1}}
         )
 
+# Educational Platform Endpoints
+@app.post("/api/courses")
+async def create_course(course: Course, current_user: dict = Depends(get_current_user)):
+    course_id = str(uuid.uuid4())
+    course_doc = {
+        "course_id": course_id,
+        "instructor_id": current_user["user_id"],
+        "title": course.title,
+        "description": course.description,
+        "category": course.category,
+        "level": course.level,
+        "duration_hours": course.duration_hours,
+        "price": course.price,
+        "thumbnail_url": course.thumbnail_url,
+        "learning_objectives": course.learning_objectives,
+        "prerequisites": course.prerequisites,
+        "skills_gained": course.skills_gained,
+        "certificate_type": course.certificate_type,
+        "status": CourseStatus.DRAFT,
+        "enrollment_count": 0,
+        "average_rating": 0.0,
+        "review_count": 0,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    courses_collection.insert_one(course_doc)
+    return {"message": "Course created successfully", "course_id": course_id}
+
+@app.get("/api/courses")
+async def get_courses(skip: int = 0, limit: int = 20, category: Optional[str] = None,
+                     level: Optional[str] = None, free_only: Optional[bool] = None,
+                     current_user: dict = Depends(get_current_user)):
+    query = {"status": CourseStatus.PUBLISHED}
+    if category:
+        query["category"] = category
+    if level:
+        query["level"] = level
+    if free_only:
+        query["price"] = 0.0
+    
+    courses_cursor = courses_collection.find(query).skip(skip).limit(limit).sort("created_at", -1)
+    courses = []
+    
+    for course in courses_cursor:
+        # Get instructor info
+        instructor = users_collection.find_one({"user_id": course["instructor_id"]})
+        
+        # Check if current user is enrolled
+        enrollment = enrollments_collection.find_one({
+            "course_id": course["course_id"],
+            "student_id": current_user["user_id"]
+        })
+        
+        course_data = {
+            "course_id": course["course_id"],
+            "title": course["title"],
+            "description": course["description"],
+            "category": course["category"],
+            "level": course["level"],
+            "duration_hours": course["duration_hours"],
+            "price": course["price"],
+            "thumbnail_url": course.get("thumbnail_url", ""),
+            "learning_objectives": course["learning_objectives"],
+            "skills_gained": course["skills_gained"],
+            "enrollment_count": course.get("enrollment_count", 0),
+            "average_rating": course.get("average_rating", 0.0),
+            "review_count": course.get("review_count", 0),
+            "created_at": course["created_at"],
+            "instructor_name": instructor["full_name"] if instructor else "Unknown",
+            "instructor_country": instructor["country"] if instructor else "Unknown",
+            "is_enrolled": bool(enrollment),
+            "enrollment_status": enrollment.get("status") if enrollment else None
+        }
+        courses.append(course_data)
+    
+    return {"courses": courses}
+
+@app.get("/api/courses/{course_id}")
+async def get_course(course_id: str, current_user: dict = Depends(get_current_user)):
+    course = courses_collection.find_one({"course_id": course_id})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Get instructor info
+    instructor = users_collection.find_one({"user_id": course["instructor_id"]})
+    
+    # Get course modules
+    modules = list(course_modules_collection.find({
+        "course_id": course_id
+    }).sort("order_index", 1))
+    
+    for module in modules:
+        # Get lessons for each module
+        lessons = list(course_lessons_collection.find({
+            "module_id": module["module_id"]
+        }).sort("order_index", 1))
+        module["lessons"] = lessons
+    
+    # Check if current user is enrolled
+    enrollment = enrollments_collection.find_one({
+        "course_id": course_id,
+        "student_id": current_user["user_id"]
+    })
+    
+    # Get recent reviews
+    reviews = list(course_reviews_collection.find({
+        "course_id": course_id
+    }).sort("created_at", -1).limit(5))
+    
+    for review in reviews:
+        reviewer = users_collection.find_one({"user_id": review["reviewer_id"]})
+        review["reviewer_name"] = reviewer["full_name"] if reviewer else "Anonymous"
+        review["reviewer_country"] = reviewer["country"] if reviewer else ""
+    
+    course_data = {
+        "course_id": course["course_id"],
+        "title": course["title"],
+        "description": course["description"],
+        "category": course["category"],
+        "level": course["level"],
+        "duration_hours": course["duration_hours"],
+        "price": course["price"],
+        "thumbnail_url": course.get("thumbnail_url", ""),
+        "learning_objectives": course["learning_objectives"],
+        "prerequisites": course.get("prerequisites", []),
+        "skills_gained": course["skills_gained"],
+        "certificate_type": course["certificate_type"],
+        "enrollment_count": course.get("enrollment_count", 0),
+        "average_rating": course.get("average_rating", 0.0),
+        "review_count": course.get("review_count", 0),
+        "created_at": course["created_at"],
+        "instructor_id": course["instructor_id"],
+        "instructor_name": instructor["full_name"] if instructor else "Unknown",
+        "instructor_country": instructor["country"] if instructor else "Unknown",
+        "instructor_bio": instructor.get("bio", "") if instructor else "",
+        "is_enrolled": bool(enrollment),
+        "enrollment_status": enrollment.get("status") if enrollment else None,
+        "progress_percentage": enrollment.get("progress_percentage", 0) if enrollment else 0,
+        "modules": modules,
+        "recent_reviews": reviews
+    }
+    
+    return course_data
+
+@app.post("/api/courses/{course_id}/enroll")
+async def enroll_in_course(course_id: str, current_user: dict = Depends(get_current_user)):
+    # Check if course exists
+    course = courses_collection.find_one({"course_id": course_id})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Check if already enrolled
+    existing_enrollment = enrollments_collection.find_one({
+        "course_id": course_id,
+        "student_id": current_user["user_id"]
+    })
+    
+    if existing_enrollment:
+        raise HTTPException(status_code=400, detail="Already enrolled in this course")
+    
+    # Create enrollment
+    enrollment_id = str(uuid.uuid4())
+    enrollment_doc = {
+        "enrollment_id": enrollment_id,
+        "course_id": course_id,
+        "student_id": current_user["user_id"],
+        "status": EnrollmentStatus.ACTIVE,
+        "progress_percentage": 0,
+        "enrolled_at": datetime.utcnow(),
+        "last_accessed": datetime.utcnow()
+    }
+    
+    enrollments_collection.insert_one(enrollment_doc)
+    
+    # Update course enrollment count
+    courses_collection.update_one(
+        {"course_id": course_id},
+        {"$inc": {"enrollment_count": 1}}
+    )
+    
+    return {"message": "Successfully enrolled in course", "enrollment_id": enrollment_id}
+
+@app.get("/api/courses/my-courses")
+async def get_my_courses(current_user: dict = Depends(get_current_user)):
+    # Get user's enrollments
+    enrollments_cursor = enrollments_collection.find({
+        "student_id": current_user["user_id"]
+    }).sort("enrolled_at", -1)
+    
+    courses = []
+    for enrollment in enrollments_cursor:
+        # Get course info
+        course = courses_collection.find_one({"course_id": enrollment["course_id"]})
+        if course:
+            instructor = users_collection.find_one({"user_id": course["instructor_id"]})
+            
+            course_data = {
+                "course_id": course["course_id"],
+                "title": course["title"],
+                "category": course["category"],
+                "level": course["level"],
+                "duration_hours": course["duration_hours"],
+                "thumbnail_url": course.get("thumbnail_url", ""),
+                "instructor_name": instructor["full_name"] if instructor else "Unknown",
+                "enrollment_status": enrollment["status"],
+                "progress_percentage": enrollment.get("progress_percentage", 0),
+                "enrolled_at": enrollment["enrolled_at"],
+                "last_accessed": enrollment.get("last_accessed")
+            }
+            courses.append(course_data)
+    
+    return {"courses": courses}
+
+@app.post("/api/courses/{course_id}/review")
+async def add_course_review(course_id: str, review: CourseReview, current_user: dict = Depends(get_current_user)):
+    # Check if course exists
+    course = courses_collection.find_one({"course_id": course_id})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Check if user is enrolled
+    enrollment = enrollments_collection.find_one({
+        "course_id": course_id,
+        "student_id": current_user["user_id"]
+    })
+    
+    if not enrollment:
+        raise HTTPException(status_code=400, detail="You must be enrolled to review this course")
+    
+    # Check if already reviewed
+    existing_review = course_reviews_collection.find_one({
+        "course_id": course_id,
+        "reviewer_id": current_user["user_id"]
+    })
+    
+    if existing_review:
+        raise HTTPException(status_code=400, detail="You have already reviewed this course")
+    
+    review_id = str(uuid.uuid4())
+    review_doc = {
+        "review_id": review_id,
+        "course_id": course_id,
+        "reviewer_id": current_user["user_id"],
+        "rating": review.rating,
+        "review_text": review.review_text,
+        "created_at": datetime.utcnow()
+    }
+    
+    course_reviews_collection.insert_one(review_doc)
+    
+    # Update course average rating
+    all_reviews = list(course_reviews_collection.find({"course_id": course_id}))
+    avg_rating = sum(r["rating"] for r in all_reviews) / len(all_reviews)
+    
+    courses_collection.update_one(
+        {"course_id": course_id},
+        {
+            "$set": {"average_rating": avg_rating},
+            "$inc": {"review_count": 1}
+        }
+    )
+    
+    return {"message": "Review added successfully", "review_id": review_id}
+
+@app.get("/api/mentors")
+async def get_mentors(skill_area: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    # Find users who have skills and are willing to mentor
+    query = {}
+    if skill_area:
+        query["skills"] = {"$regex": skill_area, "$options": "i"}
+    
+    # For now, consider users with skills as potential mentors
+    mentors_cursor = users_collection.find(query).limit(20)
+    mentors = []
+    
+    for mentor in mentors_cursor:
+        if mentor["user_id"] != current_user["user_id"] and mentor.get("skills"):
+            # Count active mentorships
+            active_mentorships = mentorships_collection.count_documents({
+                "mentor_id": mentor["user_id"],
+                "status": MentorshipStatus.ACTIVE
+            })
+            
+            mentor_data = {
+                "user_id": mentor["user_id"],
+                "full_name": mentor["full_name"],
+                "country": mentor["country"],
+                "bio": mentor.get("bio", ""),
+                "skills": mentor.get("skills", []),
+                "work_experience": mentor.get("work_experience", ""),
+                "active_mentorships": active_mentorships,
+                "languages": mentor.get("languages", [])
+            }
+            mentors.append(mentor_data)
+    
+    return {"mentors": mentors}
+
+@app.post("/api/mentorship/request")
+async def request_mentorship(request: MentorshipRequest, current_user: dict = Depends(get_current_user)):
+    # Check if mentor exists
+    mentor = users_collection.find_one({"user_id": request.mentor_id})
+    if not mentor:
+        raise HTTPException(status_code=404, detail="Mentor not found")
+    
+    # Check if mentorship already exists
+    existing_mentorship = mentorships_collection.find_one({
+        "mentor_id": request.mentor_id,
+        "mentee_id": current_user["user_id"],
+        "status": {"$in": ["pending", "active"]}
+    })
+    
+    if existing_mentorship:
+        raise HTTPException(status_code=400, detail="Mentorship request already exists")
+    
+    mentorship_id = str(uuid.uuid4())
+    mentorship_doc = {
+        "mentorship_id": mentorship_id,
+        "mentor_id": request.mentor_id,
+        "mentee_id": current_user["user_id"],
+        "skill_area": request.skill_area,
+        "goals": request.goals,
+        "duration_weeks": request.duration_weeks,
+        "message": request.message,
+        "status": MentorshipStatus.PENDING,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    mentorships_collection.insert_one(mentorship_doc)
+    return {"message": "Mentorship request sent successfully", "mentorship_id": mentorship_id}
+
+@app.get("/api/mentorship/my-mentorships")
+async def get_my_mentorships(current_user: dict = Depends(get_current_user)):
+    # Get mentorships where user is mentor
+    as_mentor = list(mentorships_collection.find({
+        "mentor_id": current_user["user_id"]
+    }).sort("created_at", -1))
+    
+    # Get mentorships where user is mentee
+    as_mentee = list(mentorships_collection.find({
+        "mentee_id": current_user["user_id"]
+    }).sort("created_at", -1))
+    
+    # Populate user data
+    for mentorship in as_mentor:
+        mentee = users_collection.find_one({"user_id": mentorship["mentee_id"]})
+        mentorship["mentee_name"] = mentee["full_name"] if mentee else "Unknown"
+        mentorship["mentee_country"] = mentee["country"] if mentee else "Unknown"
+    
+    for mentorship in as_mentee:
+        mentor = users_collection.find_one({"user_id": mentorship["mentor_id"]})
+        mentorship["mentor_name"] = mentor["full_name"] if mentor else "Unknown"
+        mentorship["mentor_country"] = mentor["country"] if mentor else "Unknown"
+    
+    return {
+        "as_mentor": as_mentor,
+        "as_mentee": as_mentee
+    }
+
+@app.put("/api/mentorship/{mentorship_id}/status")
+async def update_mentorship_status(mentorship_id: str, status: MentorshipStatus, current_user: dict = Depends(get_current_user)):
+    mentorship = mentorships_collection.find_one({"mentorship_id": mentorship_id})
+    if not mentorship:
+        raise HTTPException(status_code=404, detail="Mentorship not found")
+    
+    # Only mentor can accept/reject, both can complete/cancel
+    if status in ["active"] and mentorship["mentor_id"] != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Only mentor can accept requests")
+    
+    if mentorship["mentor_id"] != current_user["user_id"] and mentorship["mentee_id"] != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    mentorships_collection.update_one(
+        {"mentorship_id": mentorship_id},
+        {"$set": {"status": status, "updated_at": datetime.utcnow()}}
+    )
+    
+    return {"message": "Mentorship status updated successfully"}
+
 # Message endpoints (existing)
 @app.post("/api/messages")
 async def send_message(message: Message, current_user: dict = Depends(get_current_user)):
