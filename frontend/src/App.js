@@ -1222,4 +1222,328 @@ function MessagesView({ token, user }) {
   );
 }
 
+function JobsView({ token, user, setCurrentView }) {
+  const [jobs, setJobs] = useState([]);
+  const [recommendedJobs, setRecommendedJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('all');
+  const [filters, setFilters] = useState({
+    job_type: '',
+    job_category: '',
+    location: '',
+    skills: ''
+  });
+
+  useEffect(() => {
+    fetchJobs();
+    fetchRecommendedJobs();
+  }, [filters]);
+
+  const fetchJobs = async () => {
+    try {
+      const queryParams = new URLSearchParams();
+      Object.keys(filters).forEach(key => {
+        if (filters[key]) queryParams.append(key, filters[key]);
+      });
+
+      const response = await fetch(`${API_URL}/api/jobs?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setJobs(data.jobs);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRecommendedJobs = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/jobs/recommended`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setRecommendedJobs(data.jobs);
+      }
+    } catch (error) {
+      console.error('Error fetching recommended jobs:', error);
+    }
+  };
+
+  const applyToJob = async (jobId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/jobs/${jobId}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          job_id: jobId,
+          cover_letter: "I am interested in this position and believe my skills are a great match.",
+          portfolio_links: user?.portfolio_url || ""
+        })
+      });
+
+      if (response.ok) {
+        alert('Application submitted successfully!');
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Failed to submit application');
+      }
+    } catch (error) {
+      console.error('Error applying to job:', error);
+      alert('Network error. Please try again.');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-8 text-white">
+        <div className="flex flex-col md:flex-row items-center justify-between">
+          <div className="md:w-2/3">
+            <h1 className="text-4xl font-bold mb-4">🚀 AfriWorkMesh</h1>
+            <p className="text-xl mb-6">
+              Discover amazing job opportunities across Africa. From tech startups to NGOs, find your perfect career match.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setCurrentView('organization')}
+                className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+              >
+                Post a Job
+              </button>
+              <button
+                onClick={() => setCurrentView('my-applications')}
+                className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+              >
+                My Applications
+              </button>
+            </div>
+          </div>
+          <div className="md:w-1/3 mt-6 md:mt-0">
+            <img 
+              src="https://images.pexels.com/photos/7616608/pexels-photo-7616608.jpeg" 
+              alt="African professionals" 
+              className="rounded-lg shadow-lg w-full h-48 object-cover"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-md">
+        <div className="flex border-b">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-6 py-4 font-medium transition-colors ${
+              activeTab === 'all' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            All Jobs ({jobs.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('recommended')}
+            className={`px-6 py-4 font-medium transition-colors ${
+              activeTab === 'recommended' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            Recommended ({recommendedJobs.length})
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="p-6 border-b bg-gray-50">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Job Type</label>
+              <select
+                value={filters.job_type}
+                onChange={(e) => setFilters({...filters, job_type: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Types</option>
+                <option value="full_time">Full Time</option>
+                <option value="part_time">Part Time</option>
+                <option value="internship">Internship</option>
+                <option value="gig_work">Gig Work</option>
+                <option value="project">Project</option>
+                <option value="volunteer">Volunteer</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select
+                value={filters.job_category}
+                onChange={(e) => setFilters({...filters, job_category: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Categories</option>
+                <option value="technology">Technology</option>
+                <option value="agriculture">Agriculture</option>
+                <option value="education">Education</option>
+                <option value="health">Health</option>
+                <option value="environment">Environment</option>
+                <option value="finance">Finance</option>
+                <option value="arts">Arts</option>
+                <option value="business">Business</option>
+                <option value="engineering">Engineering</option>
+                <option value="social_work">Social Work</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <input
+                type="text"
+                value={filters.location}
+                onChange={(e) => setFilters({...filters, location: e.target.value})}
+                placeholder="Enter location..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Skills</label>
+              <input
+                type="text"
+                value={filters.skills}
+                onChange={(e) => setFilters({...filters, skills: e.target.value})}
+                placeholder="Enter skills..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Jobs List */}
+        <div className="p-6">
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading amazing opportunities...</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {(activeTab === 'all' ? jobs : recommendedJobs).map((job) => (
+                <JobCard key={job.job_id} job={job} onApply={applyToJob} />
+              ))}
+            </div>
+          )}
+
+          {!loading && (activeTab === 'all' ? jobs : recommendedJobs).length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🔍</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No jobs found</h3>
+              <p className="text-gray-600">Try adjusting your filters or check back later for new opportunities.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JobCard({ job, onApply }) {
+  const formatJobType = (type) => {
+    return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  const formatCategory = (category) => {
+    return category.charAt(0).toUpperCase() + category.slice(1);
+  };
+
+  const getJobTypeColor = (type) => {
+    const colors = {
+      'full_time': 'bg-green-100 text-green-800',
+      'part_time': 'bg-blue-100 text-blue-800',
+      'internship': 'bg-purple-100 text-purple-800',
+      'gig_work': 'bg-orange-100 text-orange-800',
+      'project': 'bg-yellow-100 text-yellow-800',
+      'volunteer': 'bg-red-100 text-red-800'
+    };
+    return colors[type] || 'bg-gray-100 text-gray-800';
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+        <div className="flex-1">
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="text-xl font-bold text-gray-800">{job.title}</h3>
+            {job.match_score && (
+              <span className="ml-4 bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">
+                {job.match_score}% match
+              </span>
+            )}
+          </div>
+          <p className="text-gray-600 mb-2">{job.organization_name}</p>
+          <p className="text-sm text-gray-500 mb-3">{job.location}</p>
+          
+          <div className="flex flex-wrap gap-2 mb-3">
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getJobTypeColor(job.job_type)}`}>
+              {formatJobType(job.job_type)}
+            </span>
+            <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
+              {formatCategory(job.job_category)}
+            </span>
+            {job.salary_range && (
+              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                {job.salary_range}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <p className="text-gray-600 mb-4 line-clamp-3">{job.description}</p>
+
+      <div className="mb-4">
+        <h4 className="font-semibold text-gray-800 mb-2">Required Skills</h4>
+        <div className="flex flex-wrap gap-2">
+          {job.skills_required?.slice(0, 5).map((skill, index) => (
+            <span key={index} className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+              {skill}
+            </span>
+          ))}
+          {job.skills_required?.length > 5 && (
+            <span className="text-orange-600 text-xs">+{job.skills_required.length - 5} more</span>
+          )}
+        </div>
+        {job.matching_skills && job.matching_skills.length > 0 && (
+          <div className="mt-2">
+            <p className="text-sm text-green-600 font-medium">
+              ✅ You have: {job.matching_skills.join(', ')}
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-500">
+          Posted {new Date(job.created_at).toLocaleDateString()}
+          {job.deadline && (
+            <span className="ml-2">• Deadline: {new Date(job.deadline).toLocaleDateString()}</span>
+          )}
+        </div>
+        <button
+          onClick={() => onApply(job.job_id)}
+          className="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+        >
+          Apply Now
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default App;
