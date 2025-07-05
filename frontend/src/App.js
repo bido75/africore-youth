@@ -1715,6 +1715,14 @@ function Header({ user, logout, currentView, setCurrentView }) {
               >
                 Funding
               </button>
+              <button
+                onClick={() => setCurrentView('education')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  currentView === 'education' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Education
+              </button>
             </div>
           </div>
           <div className="flex items-center space-x-4">
