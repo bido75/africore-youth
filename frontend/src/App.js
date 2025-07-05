@@ -1813,7 +1813,7 @@ function OrganizationView({ token, user }) {
           )}
         </div>
       ) : (
-        <OrganizationDashboard organization={organization} token={token} />
+        <OrganizationDashboard organization={organization} token={token} setCurrentView={setCurrentView} />
       )}
     </div>
   );
