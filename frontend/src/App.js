@@ -68,6 +68,271 @@ function App() {
   );
 }
 
+function FundingView({ token, user, setCurrentView }) {
+  const [projects, setProjects] = useState([]);
+  const [featuredProjects, setFeaturedProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('all');
+  const [filters, setFilters] = useState({
+    category: '',
+    location: ''
+  });
+
+  useEffect(() => {
+    fetchProjects();
+    fetchFeaturedProjects();
+  }, [filters]);
+
+  const fetchProjects = async () => {
+    try {
+      const queryParams = new URLSearchParams();
+      Object.keys(filters).forEach(key => {
+        if (filters[key]) queryParams.append(key, filters[key]);
+      });
+
+      const response = await fetch(`${API_URL}/api/projects?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data.projects);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchFeaturedProjects = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/projects?featured=true&limit=6`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFeaturedProjects(data.projects);
+      }
+    } catch (error) {
+      console.error('Error fetching featured projects:', error);
+    }
+  };
+
+  const fundProject = async (projectId, amount) => {
+    const contribution = prompt(`Enter contribution amount for this project:`);
+    if (!contribution || isNaN(contribution) || parseFloat(contribution) <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/projects/${projectId}/contribute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          project_id: projectId,
+          amount: parseFloat(contribution),
+          anonymous: false,
+          message: "Supporting this amazing project!"
+        })
+      });
+
+      if (response.ok) {
+        alert('Contribution successful! Thank you for supporting African innovation.');
+        fetchProjects(); // Refresh the list
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Failed to contribute');
+      }
+    } catch (error) {
+      console.error('Error contributing to project:', error);
+      alert('Network error. Please try again.');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-8 text-white">
+        <div className="flex flex-col md:flex-row items-center justify-between">
+          <div className="md:w-2/3">
+            <h1 className="text-4xl font-bold mb-4">🌱 AfriFund DAO</h1>
+            <p className="text-xl mb-6">
+              Fund impactful projects across Africa. Support innovation, education, environment, and community development led by African youth.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setCurrentView('create-project')}
+                className="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors"
+              >
+                Create Project
+              </button>
+              <button
+                onClick={() => setCurrentView('my-projects')}
+                className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-green-600 transition-colors"
+              >
+                My Projects
+              </button>
+              <button
+                onClick={() => setCurrentView('my-contributions')}
+                className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-green-600 transition-colors"
+              >
+                My Contributions
+              </button>
+            </div>
+          </div>
+          <div className="md:w-1/3 mt-6 md:mt-0">
+            <img 
+              src="https://images.unsplash.com/photo-1582145573289-967ef18c9b47" 
+              alt="African community development" 
+              className="rounded-lg shadow-lg w-full h-48 object-cover"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Impact Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-green-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Active Projects</p>
+              <p className="text-2xl font-bold text-gray-800">{projects.length}</p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">🚀</span>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-blue-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Total Funded</p>
+              <p className="text-2xl font-bold text-gray-800">$125K+</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">💰</span>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-yellow-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Contributors</p>
+              <p className="text-2xl font-bold text-gray-800">1,250+</p>
+            </div>
+            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">👥</span>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-purple-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Lives Impacted</p>
+              <p className="text-2xl font-bold text-gray-800">25K+</p>
+            </div>
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">🌍</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-md">
+        <div className="flex border-b">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-6 py-4 font-medium transition-colors ${
+              activeTab === 'all' ? 'border-b-2 border-green-500 text-green-600' : 'text-gray-600 hover:text-green-600'
+            }`}
+          >
+            All Projects ({projects.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('featured')}
+            className={`px-6 py-4 font-medium transition-colors ${
+              activeTab === 'featured' ? 'border-b-2 border-green-500 text-green-600' : 'text-gray-600 hover:text-green-600'
+            }`}
+          >
+            Featured ({featuredProjects.length})
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="p-6 border-b bg-gray-50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select
+                value={filters.category}
+                onChange={(e) => setFilters({...filters, category: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="">All Categories</option>
+                <option value="education">Education</option>
+                <option value="technology">Technology</option>
+                <option value="agriculture">Agriculture</option>
+                <option value="health">Health</option>
+                <option value="environment">Environment</option>
+                <option value="arts_culture">Arts & Culture</option>
+                <option value="social_impact">Social Impact</option>
+                <option value="entrepreneurship">Entrepreneurship</option>
+                <option value="infrastructure">Infrastructure</option>
+                <option value="climate_action">Climate Action</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <input
+                type="text"
+                value={filters.location}
+                onChange={(e) => setFilters({...filters, location: e.target.value})}
+                placeholder="Enter location..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Projects List */}
+        <div className="p-6">
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading amazing projects...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(activeTab === 'all' ? projects : featuredProjects).map((project) => (
+                <ProjectCard key={project.project_id} project={project} onFund={fundProject} />
+              ))}
+            </div>
+          )}
+
+          {!loading && (activeTab === 'all' ? projects : featuredProjects).length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🌱</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No projects found</h3>
+              <p className="text-gray-600">Be the first to create an impactful project or adjust your filters.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AuthScreen({ setToken, setUser }) {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
