@@ -16,7 +16,7 @@ from enum import Enum
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AfriCore - Pan-African Youth Network & Employment Platform")
+app = FastAPI(title="AfriCore - Pan-African Youth Network, Employment & Funding Platform")
 
 # CORS middleware
 app.add_middleware(
@@ -49,6 +49,10 @@ try:
     jobs_collection = db.jobs
     applications_collection = db.applications
     endorsements_collection = db.endorsements
+    projects_collection = db.projects
+    contributions_collection = db.contributions
+    project_updates_collection = db.project_updates
+    project_comments_collection = db.project_comments
     logger.info("MongoDB connected successfully")
 except Exception as e:
     logger.error(f"Failed to connect to MongoDB: {e}")
@@ -95,6 +99,31 @@ class OrganizationType(str, Enum):
     CORPORATION = "corporation"
     UNIVERSITY = "university"
     COOPERATIVE = "cooperative"
+
+class ProjectCategory(str, Enum):
+    EDUCATION = "education"
+    TECHNOLOGY = "technology"
+    AGRICULTURE = "agriculture"
+    HEALTH = "health"
+    ENVIRONMENT = "environment"
+    ARTS_CULTURE = "arts_culture"
+    SOCIAL_IMPACT = "social_impact"
+    ENTREPRENEURSHIP = "entrepreneurship"
+    INFRASTRUCTURE = "infrastructure"
+    CLIMATE_ACTION = "climate_action"
+
+class ProjectStatus(str, Enum):
+    DRAFT = "draft"
+    PENDING_APPROVAL = "pending_approval"
+    ACTIVE = "active"
+    FUNDED = "funded"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+class FundingGoalType(str, Enum):
+    FIXED = "fixed"
+    FLEXIBLE = "flexible"
 
 # Pydantic models
 class UserRegister(BaseModel):
