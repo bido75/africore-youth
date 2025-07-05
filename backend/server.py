@@ -169,6 +169,46 @@ class ParticipationLevel(str, Enum):
     GOLD = "gold"
     PLATINUM = "platinum"
 
+class CourseCategory(str, Enum):
+    TECHNOLOGY = "technology"
+    BUSINESS = "business"
+    DESIGN = "design"
+    MARKETING = "marketing"
+    AGRICULTURE = "agriculture"
+    HEALTH = "health"
+    EDUCATION = "education"
+    ARTS = "arts"
+    LANGUAGES = "languages"
+    PERSONAL_DEVELOPMENT = "personal_development"
+
+class CourseLevel(str, Enum):
+    BEGINNER = "beginner"
+    INTERMEDIATE = "intermediate"
+    ADVANCED = "advanced"
+    EXPERT = "expert"
+
+class CourseStatus(str, Enum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
+class EnrollmentStatus(str, Enum):
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    DROPPED = "dropped"
+
+class CertificateType(str, Enum):
+    COMPLETION = "completion"
+    ACHIEVEMENT = "achievement"
+    SKILL_BADGE = "skill_badge"
+    MICRO_CREDENTIAL = "micro_credential"
+
+class MentorshipStatus(str, Enum):
+    PENDING = "pending"
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
 # Pydantic models
 class UserRegister(BaseModel):
     email: EmailStr
