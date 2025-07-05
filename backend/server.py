@@ -275,6 +275,47 @@ class ProjectComment(BaseModel):
     content: str
     reply_to: Optional[str] = None
 
+class PolicyProposal(BaseModel):
+    title: str
+    description: str
+    category: PolicyCategory
+    proposal_type: ProposalType
+    target_location: str
+    expected_impact: str
+    implementation_timeline: Optional[str] = ""
+    resources_needed: Optional[str] = ""
+    supporting_documents: List[str] = []
+
+class PolicyFeedback(BaseModel):
+    policy_id: str
+    feedback_type: str  # "comment", "suggestion", "concern", "support"
+    content: str
+    impact_assessment: Optional[str] = ""
+    alternative_suggestion: Optional[str] = ""
+
+class PolicyVote(BaseModel):
+    policy_id: str
+    vote_type: VoteType
+    comment: Optional[str] = ""
+
+class ForumPost(BaseModel):
+    forum_id: str
+    title: str
+    content: str
+    tags: List[str] = []
+
+class ForumReply(BaseModel):
+    post_id: str
+    content: str
+    reply_to: Optional[str] = None
+
+class CivicForum(BaseModel):
+    title: str
+    description: str
+    category: PolicyCategory
+    location: str
+    moderators: List[str] = []
+
 class Token(BaseModel):
     access_token: str
     token_type: str
