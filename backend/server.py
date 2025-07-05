@@ -197,6 +197,40 @@ class SkillEndorsement(BaseModel):
     skill: str
     endorsement_message: Optional[str] = ""
 
+class ProjectProposal(BaseModel):
+    title: str
+    description: str
+    category: ProjectCategory
+    funding_goal: float
+    funding_goal_type: FundingGoalType
+    duration_months: int
+    location: str
+    impact_description: str
+    budget_breakdown: str
+    milestones: List[str]
+    images: List[str] = []
+    team_members: Optional[str] = ""
+    risks_challenges: Optional[str] = ""
+    sustainability_plan: Optional[str] = ""
+
+class ProjectContribution(BaseModel):
+    project_id: str
+    amount: float
+    anonymous: bool = False
+    message: Optional[str] = ""
+
+class ProjectUpdate(BaseModel):
+    project_id: str
+    title: str
+    content: str
+    images: List[str] = []
+    milestone_completed: Optional[str] = None
+
+class ProjectComment(BaseModel):
+    project_id: str
+    content: str
+    reply_to: Optional[str] = None
+
 class Token(BaseModel):
     access_token: str
     token_type: str
