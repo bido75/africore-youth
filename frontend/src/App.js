@@ -68,6 +68,114 @@ function App() {
   );
 }
 
+function MyContributionsView({ token }) {
+  const [contributions, setContributions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMyContributions();
+  }, []);
+
+  const fetchMyContributions = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/contributions/my`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setContributions(data.contributions);
+      }
+    } catch (error) {
+      console.error('Error fetching my contributions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'active': 'bg-green-100 text-green-800',
+      'funded': 'bg-blue-100 text-blue-800',
+      'in_progress': 'bg-yellow-100 text-yellow-800',
+      'completed': 'bg-purple-100 text-purple-800',
+      'cancelled': 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const totalContributed = contributions.reduce((sum, contribution) => sum + contribution.amount, 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">💰 My Contributions</h2>
+        
+        {/* Summary */}
+        <div className="bg-green-50 rounded-lg p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold text-green-600">${totalContributed.toLocaleString()}</p>
+              <p className="text-gray-600">Total Contributed</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">{contributions.length}</p>
+              <p className="text-gray-600">Projects Supported</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">🌍</p>
+              <p className="text-gray-600">Impact Created</p>
+            </div>
+          </div>
+        </div>
+        
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading your contributions...</p>
+          </div>
+        ) : contributions.length > 0 ? (
+          <div className="space-y-4">
+            {contributions.map((contribution) => (
+              <div key={contribution.contribution_id} className="border border-gray-200 rounded-lg p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-800 mb-2">{contribution.project_title}</h3>
+                    <div className="flex items-center space-x-4 mb-2">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(contribution.project_status)}`}>
+                        {contribution.project_status.replace('_', ' ').toUpperCase()}
+                      </span>
+                      <span className="text-green-600 font-semibold">${contribution.amount.toLocaleString()}</span>
+                    </div>
+                    {contribution.message && (
+                      <p className="text-gray-600 text-sm italic">"{contribution.message}"</p>
+                    )}
+                  </div>
+                  <div className="mt-4 md:mt-0 text-right">
+                    <p className="text-sm text-gray-500">Contributed on</p>
+                    <p className="font-semibold">{new Date(contribution.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🤝</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No Contributions Yet</h3>
+            <p className="text-gray-600 mb-6">Start supporting amazing projects and create positive impact across Africa.</p>
+            <button className="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors">
+              Discover Projects
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function FundingView({ token, user, setCurrentView }) {
   const [projects, setProjects] = useState([]);
   const [featuredProjects, setFeaturedProjects] = useState([]);
