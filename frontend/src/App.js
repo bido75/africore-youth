@@ -72,6 +72,198 @@ function App() {
   );
 }
 
+function MyCivicParticipationView({ token, setCurrentView }) {
+  const [participation, setParticipation] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchParticipationData();
+    fetchLeaderboard();
+  }, []);
+
+  const fetchParticipationData = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/civic/my-participation`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setParticipation(data);
+      }
+    } catch (error) {
+      console.error('Error fetching participation data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLeaderboard = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/civic/leaderboard`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data.leaderboard);
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    }
+  };
+
+  const getParticipationBadge = (level) => {
+    const badges = {
+      'bronze': '🥉',
+      'silver': '🥈',
+      'gold': '🥇',
+      'platinum': '💎'
+    };
+    return badges[level] || '🥉';
+  };
+
+  const getParticipationColor = (level) => {
+    const colors = {
+      'bronze': 'bg-amber-100 text-amber-800',
+      'silver': 'bg-gray-100 text-gray-800',
+      'gold': 'bg-yellow-100 text-yellow-800',
+      'platinum': 'bg-purple-100 text-purple-800'
+    };
+    return colors[level] || 'bg-gray-100 text-gray-800';
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading your civic participation...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">🏆 My Civic Participation</h2>
+        
+        {participation && (
+          <>
+            {/* Participation Level */}
+            <div className="bg-purple-50 rounded-lg p-6 mb-6">
+              <div className="text-center">
+                <div className="text-6xl mb-4">{getParticipationBadge(participation.participation_level)}</div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                  {participation.participation_level.charAt(0).toUpperCase() + participation.participation_level.slice(1)} Participant
+                </h3>
+                <p className="text-purple-600 font-semibold text-xl">{participation.total_points} Civic Points</p>
+              </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="bg-blue-50 rounded-lg p-6 text-center">
+                <p className="text-3xl font-bold text-blue-600">{participation.policies_created}</p>
+                <p className="text-gray-600">Policies Created</p>
+              </div>
+              <div className="bg-green-50 rounded-lg p-6 text-center">
+                <p className="text-3xl font-bold text-green-600">{participation.votes_cast}</p>
+                <p className="text-gray-600">Votes Cast</p>
+              </div>
+              <div className="bg-orange-50 rounded-lg p-6 text-center">
+                <p className="text-3xl font-bold text-orange-600">{participation.feedback_given}</p>
+                <p className="text-gray-600">Feedback Given</p>
+              </div>
+            </div>
+
+            {/* Recent Policies */}
+            {participation.recent_policies && participation.recent_policies.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Your Recent Policies</h3>
+                <div className="space-y-4">
+                  {participation.recent_policies.map((policy) => (
+                    <div key={policy.policy_id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold text-gray-800">{policy.title}</h4>
+                          <p className="text-sm text-gray-600">
+                            Status: {policy.status.replace('_', ' ').toUpperCase()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">👍 {policy.support_votes}</p>
+                          <p className="text-sm text-gray-600">👎 {policy.oppose_votes}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Call to Action */}
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white text-center">
+              <h3 className="text-xl font-bold mb-2">Keep Making a Difference!</h3>
+              <p className="mb-4">Your voice matters in shaping Africa's future. Continue participating in civic discussions.</p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => setCurrentView('create-policy')}
+                  className="bg-white text-purple-600 px-6 py-2 rounded-lg font-semibold hover:bg-purple-50 transition-colors"
+                >
+                  Create Policy
+                </button>
+                <button
+                  onClick={() => setCurrentView('civic')}
+                  className="border-2 border-white text-white px-6 py-2 rounded-lg font-semibold hover:bg-white hover:text-purple-600 transition-colors"
+                >
+                  Browse Policies
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Leaderboard */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h3 className="text-xl font-bold text-gray-800 mb-4">🌟 Civic Engagement Leaderboard</h3>
+        {leaderboard.length > 0 ? (
+          <div className="space-y-3">
+            {leaderboard.map((participant) => (
+              <div key={participant.user_id} className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
+                    participant.rank === 1 ? 'bg-yellow-500' : 
+                    participant.rank === 2 ? 'bg-gray-400' : 
+                    participant.rank === 3 ? 'bg-amber-600' : 'bg-purple-500'
+                  }`}>
+                    {participant.rank}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">{participant.user_name}</p>
+                    <p className="text-sm text-gray-600">{participant.user_country}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-purple-600">{participant.total_points} pts</p>
+                  <p className="text-xs text-gray-500">{getParticipationBadge(participant.participation_level)} {participant.participation_level}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-600 text-center py-4">No leaderboard data available yet.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function CivicView({ token, user, setCurrentView }) {
   const [policies, setPolicies] = useState([]);
   const [featuredPolicies, setFeaturedPolicies] = useState([]);
