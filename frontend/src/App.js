@@ -272,13 +272,15 @@ function AuthScreen({ setToken, setUser }) {
 }
 
 function Header({ user, logout, currentView, setCurrentView }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <header className="bg-white shadow-lg border-b-4 border-orange-400">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="text-2xl font-bold text-orange-600">AfriCore</div>
-            <div className="hidden md:flex space-x-6">
+            <div className="hidden md:flex space-x-4">
               <button
                 onClick={() => setCurrentView('home')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -296,6 +298,22 @@ function Header({ user, logout, currentView, setCurrentView }) {
                 Discover
               </button>
               <button
+                onClick={() => setCurrentView('jobs')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  currentView === 'jobs' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Jobs
+              </button>
+              <button
+                onClick={() => setCurrentView('my-applications')}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  currentView === 'my-applications' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                My Applications
+              </button>
+              <button
                 onClick={() => setCurrentView('connections')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   currentView === 'connections' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:text-orange-600'
@@ -304,12 +322,12 @@ function Header({ user, logout, currentView, setCurrentView }) {
                 Connections
               </button>
               <button
-                onClick={() => setCurrentView('messages')}
+                onClick={() => setCurrentView('organization')}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'messages' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:text-orange-600'
+                  currentView === 'organization' ? 'bg-green-500 text-white' : 'text-gray-600 hover:text-green-600'
                 }`}
               >
-                Messages
+                Organization
               </button>
             </div>
           </div>
