@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
@@ -10,12 +10,13 @@ import os
 import uuid
 from typing import Optional, List
 import logging
+from enum import Enum
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AfriCore - Pan-African Youth Network")
+app = FastAPI(title="AfriCore - Pan-African Youth Network & Employment Platform")
 
 # CORS middleware
 app.add_middleware(
@@ -44,10 +45,56 @@ try:
     users_collection = db.users
     connections_collection = db.connections
     messages_collection = db.messages
+    organizations_collection = db.organizations
+    jobs_collection = db.jobs
+    applications_collection = db.applications
+    endorsements_collection = db.endorsements
     logger.info("MongoDB connected successfully")
 except Exception as e:
     logger.error(f"Failed to connect to MongoDB: {e}")
     raise
+
+# Enums
+class JobType(str, Enum):
+    FULL_TIME = "full_time"
+    PART_TIME = "part_time"
+    INTERNSHIP = "internship"
+    GIG_WORK = "gig_work"
+    PROJECT = "project"
+    VOLUNTEER = "volunteer"
+
+class JobCategory(str, Enum):
+    TECHNOLOGY = "technology"
+    AGRICULTURE = "agriculture"
+    EDUCATION = "education"
+    HEALTH = "health"
+    ENVIRONMENT = "environment"
+    FINANCE = "finance"
+    ARTS = "arts"
+    BUSINESS = "business"
+    ENGINEERING = "engineering"
+    SOCIAL_WORK = "social_work"
+
+class LocationType(str, Enum):
+    REMOTE = "remote"
+    ON_SITE = "on_site"
+    HYBRID = "hybrid"
+
+class ApplicationStatus(str, Enum):
+    APPLIED = "applied"
+    REVIEWED = "reviewed"
+    SHORTLISTED = "shortlisted"
+    INTERVIEWED = "interviewed"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+
+class OrganizationType(str, Enum):
+    STARTUP = "startup"
+    NGO = "ngo"
+    GOVERNMENT = "government"
+    CORPORATION = "corporation"
+    UNIVERSITY = "university"
+    COOPERATIVE = "cooperative"
 
 # Pydantic models
 class UserRegister(BaseModel):
@@ -74,6 +121,39 @@ class UserProfile(BaseModel):
     languages: List[str] = []
     phone: Optional[str] = ""
     linkedin: Optional[str] = ""
+    work_experience: Optional[str] = ""
+    portfolio_url: Optional[str] = ""
+    availability: Optional[str] = ""
+
+class OrganizationProfile(BaseModel):
+    name: str
+    description: str
+    organization_type: OrganizationType
+    country: str
+    website: Optional[str] = ""
+    contact_email: EmailStr
+    contact_phone: Optional[str] = ""
+    size: Optional[str] = ""
+    founded_year: Optional[int] = None
+
+class JobPost(BaseModel):
+    title: str
+    description: str
+    requirements: List[str]
+    job_type: JobType
+    job_category: JobCategory
+    location_type: LocationType
+    location: str
+    salary_range: Optional[str] = ""
+    deadline: Optional[datetime] = None
+    skills_required: List[str]
+    experience_level: Optional[str] = ""
+    benefits: Optional[str] = ""
+
+class JobApplication(BaseModel):
+    job_id: str
+    cover_letter: Optional[str] = ""
+    portfolio_links: Optional[str] = ""
 
 class ConnectionRequest(BaseModel):
     target_user_id: str
@@ -82,6 +162,11 @@ class ConnectionRequest(BaseModel):
 class Message(BaseModel):
     recipient_id: str
     content: str
+
+class SkillEndorsement(BaseModel):
+    user_id: str
+    skill: str
+    endorsement_message: Optional[str] = ""
 
 class Token(BaseModel):
     access_token: str
@@ -154,6 +239,9 @@ async def register(user: UserRegister):
         "languages": [],
         "phone": "",
         "linkedin": "",
+        "work_experience": "",
+        "portfolio_url": "",
+        "availability": "",
         "profile_image": "",
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
@@ -203,6 +291,9 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
         "languages": current_user.get("languages", []),
         "phone": current_user.get("phone", ""),
         "linkedin": current_user.get("linkedin", ""),
+        "work_experience": current_user.get("work_experience", ""),
+        "portfolio_url": current_user.get("portfolio_url", ""),
+        "availability": current_user.get("availability", ""),
         "profile_image": current_user.get("profile_image", "")
     }
     return user_profile
@@ -246,6 +337,9 @@ async def get_users(skip: int = 0, limit: int = 20, country: Optional[str] = Non
             "goals": user.get("goals", ""),
             "current_projects": user.get("current_projects", ""),
             "languages": user.get("languages", []),
+            "work_experience": user.get("work_experience", ""),
+            "portfolio_url": user.get("portfolio_url", ""),
+            "availability": user.get("availability", ""),
             "profile_image": user.get("profile_image", "")
         }
         users.append(user_data)
@@ -270,11 +364,15 @@ async def get_user(user_id: str, current_user: dict = Depends(get_current_user))
         "goals": user.get("goals", ""),
         "current_projects": user.get("current_projects", ""),
         "languages": user.get("languages", []),
+        "work_experience": user.get("work_experience", ""),
+        "portfolio_url": user.get("portfolio_url", ""),
+        "availability": user.get("availability", ""),
         "profile_image": user.get("profile_image", "")
     }
     
     return user_data
 
+# Connection endpoints (existing)
 @app.post("/api/connect")
 async def send_connection_request(connection: ConnectionRequest, current_user: dict = Depends(get_current_user)):
     # Check if connection already exists
@@ -349,6 +447,385 @@ async def accept_connection(connection_id: str, current_user: dict = Depends(get
     
     return {"message": "Connection accepted"}
 
+# Organization endpoints
+@app.post("/api/organization/register")
+async def register_organization(org: OrganizationProfile, current_user: dict = Depends(get_current_user)):
+    # Check if organization already exists
+    if organizations_collection.find_one({"name": org.name, "contact_email": org.contact_email}):
+        raise HTTPException(status_code=400, detail="Organization already registered")
+    
+    org_id = str(uuid.uuid4())
+    org_doc = {
+        "organization_id": org_id,
+        "owner_id": current_user["user_id"],
+        "name": org.name,
+        "description": org.description,
+        "organization_type": org.organization_type,
+        "country": org.country,
+        "website": org.website,
+        "contact_email": org.contact_email,
+        "contact_phone": org.contact_phone,
+        "size": org.size,
+        "founded_year": org.founded_year,
+        "verified": False,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    organizations_collection.insert_one(org_doc)
+    return {"message": "Organization registered successfully", "organization_id": org_id}
+
+@app.get("/api/organizations")
+async def get_organizations(skip: int = 0, limit: int = 20, org_type: Optional[str] = None, 
+                           country: Optional[str] = None):
+    query = {}
+    if org_type:
+        query["organization_type"] = org_type
+    if country:
+        query["country"] = {"$regex": country, "$options": "i"}
+    
+    orgs_cursor = organizations_collection.find(query).skip(skip).limit(limit)
+    organizations = []
+    
+    for org in orgs_cursor:
+        org_data = {
+            "organization_id": org["organization_id"],
+            "name": org["name"],
+            "description": org["description"],
+            "organization_type": org["organization_type"],
+            "country": org["country"],
+            "website": org.get("website", ""),
+            "size": org.get("size", ""),
+            "founded_year": org.get("founded_year"),
+            "verified": org.get("verified", False)
+        }
+        organizations.append(org_data)
+    
+    return {"organizations": organizations}
+
+# Job endpoints
+@app.post("/api/jobs")
+async def create_job(job: JobPost, current_user: dict = Depends(get_current_user)):
+    # Check if user has an organization
+    org = organizations_collection.find_one({"owner_id": current_user["user_id"]})
+    if not org:
+        raise HTTPException(status_code=400, detail="You must register an organization first")
+    
+    job_id = str(uuid.uuid4())
+    job_doc = {
+        "job_id": job_id,
+        "organization_id": org["organization_id"],
+        "posted_by": current_user["user_id"],
+        "title": job.title,
+        "description": job.description,
+        "requirements": job.requirements,
+        "job_type": job.job_type,
+        "job_category": job.job_category,
+        "location_type": job.location_type,
+        "location": job.location,
+        "salary_range": job.salary_range,
+        "deadline": job.deadline,
+        "skills_required": job.skills_required,
+        "experience_level": job.experience_level,
+        "benefits": job.benefits,
+        "active": True,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    jobs_collection.insert_one(job_doc)
+    return {"message": "Job posted successfully", "job_id": job_id}
+
+@app.get("/api/jobs")
+async def get_jobs(skip: int = 0, limit: int = 20, job_type: Optional[str] = None,
+                  job_category: Optional[str] = None, location: Optional[str] = None,
+                  skills: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    query = {"active": True}
+    if job_type:
+        query["job_type"] = job_type
+    if job_category:
+        query["job_category"] = job_category
+    if location:
+        query["location"] = {"$regex": location, "$options": "i"}
+    if skills:
+        query["skills_required"] = {"$regex": skills, "$options": "i"}
+    
+    jobs_cursor = jobs_collection.find(query).skip(skip).limit(limit).sort("created_at", -1)
+    jobs = []
+    
+    for job in jobs_cursor:
+        # Get organization info
+        org = organizations_collection.find_one({"organization_id": job["organization_id"]})
+        
+        job_data = {
+            "job_id": job["job_id"],
+            "title": job["title"],
+            "description": job["description"],
+            "requirements": job["requirements"],
+            "job_type": job["job_type"],
+            "job_category": job["job_category"],
+            "location_type": job["location_type"],
+            "location": job["location"],
+            "salary_range": job.get("salary_range", ""),
+            "deadline": job.get("deadline"),
+            "skills_required": job["skills_required"],
+            "experience_level": job.get("experience_level", ""),
+            "benefits": job.get("benefits", ""),
+            "created_at": job["created_at"],
+            "organization_name": org["name"] if org else "Unknown",
+            "organization_type": org["organization_type"] if org else "Unknown"
+        }
+        jobs.append(job_data)
+    
+    return {"jobs": jobs}
+
+@app.get("/api/jobs/{job_id}")
+async def get_job(job_id: str, current_user: dict = Depends(get_current_user)):
+    job = jobs_collection.find_one({"job_id": job_id})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Get organization info
+    org = organizations_collection.find_one({"organization_id": job["organization_id"]})
+    
+    job_data = {
+        "job_id": job["job_id"],
+        "title": job["title"],
+        "description": job["description"],
+        "requirements": job["requirements"],
+        "job_type": job["job_type"],
+        "job_category": job["job_category"],
+        "location_type": job["location_type"],
+        "location": job["location"],
+        "salary_range": job.get("salary_range", ""),
+        "deadline": job.get("deadline"),
+        "skills_required": job["skills_required"],
+        "experience_level": job.get("experience_level", ""),
+        "benefits": job.get("benefits", ""),
+        "created_at": job["created_at"],
+        "organization_name": org["name"] if org else "Unknown",
+        "organization_type": org["organization_type"] if org else "Unknown",
+        "organization_description": org["description"] if org else "",
+        "organization_website": org.get("website", "") if org else ""
+    }
+    
+    return job_data
+
+@app.get("/api/jobs/recommended")
+async def get_recommended_jobs(current_user: dict = Depends(get_current_user)):
+    # Get user skills
+    user_skills = current_user.get("skills", [])
+    if not user_skills:
+        return {"jobs": []}
+    
+    # Find jobs that match user skills
+    jobs_cursor = jobs_collection.find({
+        "active": True,
+        "skills_required": {"$in": user_skills}
+    }).sort("created_at", -1).limit(10)
+    
+    jobs = []
+    for job in jobs_cursor:
+        org = organizations_collection.find_one({"organization_id": job["organization_id"]})
+        
+        # Calculate match score
+        matching_skills = set(user_skills) & set(job["skills_required"])
+        match_score = len(matching_skills) / len(job["skills_required"]) * 100
+        
+        job_data = {
+            "job_id": job["job_id"],
+            "title": job["title"],
+            "description": job["description"],
+            "job_type": job["job_type"],
+            "job_category": job["job_category"],
+            "location": job["location"],
+            "skills_required": job["skills_required"],
+            "matching_skills": list(matching_skills),
+            "match_score": round(match_score, 1),
+            "organization_name": org["name"] if org else "Unknown",
+            "created_at": job["created_at"]
+        }
+        jobs.append(job_data)
+    
+    # Sort by match score
+    jobs.sort(key=lambda x: x["match_score"], reverse=True)
+    
+    return {"jobs": jobs}
+
+# Application endpoints
+@app.post("/api/jobs/{job_id}/apply")
+async def apply_job(job_id: str, application: JobApplication, current_user: dict = Depends(get_current_user)):
+    # Check if job exists
+    job = jobs_collection.find_one({"job_id": job_id})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Check if user already applied
+    existing_application = applications_collection.find_one({
+        "job_id": job_id,
+        "applicant_id": current_user["user_id"]
+    })
+    if existing_application:
+        raise HTTPException(status_code=400, detail="You have already applied for this job")
+    
+    application_id = str(uuid.uuid4())
+    application_doc = {
+        "application_id": application_id,
+        "job_id": job_id,
+        "applicant_id": current_user["user_id"],
+        "cover_letter": application.cover_letter,
+        "portfolio_links": application.portfolio_links,
+        "status": ApplicationStatus.APPLIED,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    applications_collection.insert_one(application_doc)
+    return {"message": "Application submitted successfully", "application_id": application_id}
+
+@app.get("/api/applications")
+async def get_user_applications(current_user: dict = Depends(get_current_user)):
+    applications_cursor = applications_collection.find({
+        "applicant_id": current_user["user_id"]
+    }).sort("created_at", -1)
+    
+    applications = []
+    for app in applications_cursor:
+        # Get job info
+        job = jobs_collection.find_one({"job_id": app["job_id"]})
+        org = organizations_collection.find_one({"organization_id": job["organization_id"]}) if job else None
+        
+        app_data = {
+            "application_id": app["application_id"],
+            "job_id": app["job_id"],
+            "job_title": job["title"] if job else "Unknown",
+            "organization_name": org["name"] if org else "Unknown",
+            "status": app["status"],
+            "applied_at": app["created_at"],
+            "cover_letter": app.get("cover_letter", ""),
+            "portfolio_links": app.get("portfolio_links", "")
+        }
+        applications.append(app_data)
+    
+    return {"applications": applications}
+
+@app.get("/api/organization/applications")
+async def get_organization_applications(current_user: dict = Depends(get_current_user)):
+    # Get user's organization
+    org = organizations_collection.find_one({"owner_id": current_user["user_id"]})
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    
+    # Get all jobs for this organization
+    jobs_cursor = jobs_collection.find({"organization_id": org["organization_id"]})
+    job_ids = [job["job_id"] for job in jobs_cursor]
+    
+    # Get applications for these jobs
+    applications_cursor = applications_collection.find({
+        "job_id": {"$in": job_ids}
+    }).sort("created_at", -1)
+    
+    applications = []
+    for app in applications_cursor:
+        # Get applicant info
+        applicant = users_collection.find_one({"user_id": app["applicant_id"]})
+        job = jobs_collection.find_one({"job_id": app["job_id"]})
+        
+        app_data = {
+            "application_id": app["application_id"],
+            "job_id": app["job_id"],
+            "job_title": job["title"] if job else "Unknown",
+            "applicant_name": applicant["full_name"] if applicant else "Unknown",
+            "applicant_email": applicant["email"] if applicant else "Unknown",
+            "applicant_country": applicant["country"] if applicant else "Unknown",
+            "applicant_skills": applicant.get("skills", []) if applicant else [],
+            "status": app["status"],
+            "applied_at": app["created_at"],
+            "cover_letter": app.get("cover_letter", ""),
+            "portfolio_links": app.get("portfolio_links", "")
+        }
+        applications.append(app_data)
+    
+    return {"applications": applications}
+
+@app.put("/api/applications/{application_id}/status")
+async def update_application_status(application_id: str, status: ApplicationStatus, current_user: dict = Depends(get_current_user)):
+    # Get application
+    application = applications_collection.find_one({"application_id": application_id})
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Check if user owns the organization that posted the job
+    job = jobs_collection.find_one({"job_id": application["job_id"]})
+    org = organizations_collection.find_one({"organization_id": job["organization_id"]})
+    
+    if org["owner_id"] != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to update this application")
+    
+    applications_collection.update_one(
+        {"application_id": application_id},
+        {"$set": {"status": status, "updated_at": datetime.utcnow()}}
+    )
+    
+    return {"message": "Application status updated successfully"}
+
+# Skill endorsement endpoints
+@app.post("/api/endorse")
+async def endorse_skill(endorsement: SkillEndorsement, current_user: dict = Depends(get_current_user)):
+    # Check if users are connected
+    connection = connections_collection.find_one({
+        "$or": [
+            {"requester_id": current_user["user_id"], "target_id": endorsement.user_id, "status": "accepted"},
+            {"requester_id": endorsement.user_id, "target_id": current_user["user_id"], "status": "accepted"}
+        ]
+    })
+    
+    if not connection:
+        raise HTTPException(status_code=403, detail="You can only endorse skills of connected users")
+    
+    # Check if already endorsed
+    existing_endorsement = endorsements_collection.find_one({
+        "endorser_id": current_user["user_id"],
+        "user_id": endorsement.user_id,
+        "skill": endorsement.skill
+    })
+    
+    if existing_endorsement:
+        raise HTTPException(status_code=400, detail="You have already endorsed this skill")
+    
+    endorsement_id = str(uuid.uuid4())
+    endorsement_doc = {
+        "endorsement_id": endorsement_id,
+        "endorser_id": current_user["user_id"],
+        "user_id": endorsement.user_id,
+        "skill": endorsement.skill,
+        "endorsement_message": endorsement.endorsement_message,
+        "created_at": datetime.utcnow()
+    }
+    
+    endorsements_collection.insert_one(endorsement_doc)
+    return {"message": "Skill endorsed successfully"}
+
+@app.get("/api/endorsements/{user_id}")
+async def get_user_endorsements(user_id: str):
+    endorsements_cursor = endorsements_collection.find({"user_id": user_id})
+    endorsements = []
+    
+    for endorsement in endorsements_cursor:
+        endorser = users_collection.find_one({"user_id": endorsement["endorser_id"]})
+        endorsement_data = {
+            "endorsement_id": endorsement["endorsement_id"],
+            "skill": endorsement["skill"],
+            "endorsement_message": endorsement.get("endorsement_message", ""),
+            "endorser_name": endorser["full_name"] if endorser else "Unknown",
+            "endorser_country": endorser["country"] if endorser else "Unknown",
+            "created_at": endorsement["created_at"]
+        }
+        endorsements.append(endorsement_data)
+    
+    return {"endorsements": endorsements}
+
+# Message endpoints (existing)
 @app.post("/api/messages")
 async def send_message(message: Message, current_user: dict = Depends(get_current_user)):
     # Check if users are connected
