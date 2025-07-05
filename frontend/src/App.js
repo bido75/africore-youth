@@ -1562,7 +1562,7 @@ function MyApplicationsView({ token }) {
   );
 }
 
-function OrganizationView({ token, user }) {
+function OrganizationView({ token, user, setCurrentView }) {
   const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
