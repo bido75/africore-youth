@@ -53,6 +53,13 @@ try:
     contributions_collection = db.contributions
     project_updates_collection = db.project_updates
     project_comments_collection = db.project_comments
+    policies_collection = db.policies
+    policy_feedback_collection = db.policy_feedback
+    policy_votes_collection = db.policy_votes
+    civic_forums_collection = db.civic_forums
+    forum_posts_collection = db.forum_posts
+    civic_achievements_collection = db.civic_achievements
+    participation_points_collection = db.participation_points
     logger.info("MongoDB connected successfully")
 except Exception as e:
     logger.error(f"Failed to connect to MongoDB: {e}")
