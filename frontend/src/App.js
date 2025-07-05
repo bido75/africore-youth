@@ -355,6 +355,29 @@ function Header({ user, logout, currentView, setCurrentView }) {
 }
 
 function HomeView({ user, setCurrentView }) {
+  const [stats, setStats] = useState({
+    totalJobs: 0,
+    recommendedJobs: 0,
+    applications: 0
+  });
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      // This would be replaced with actual API calls
+      setStats({
+        totalJobs: 150,
+        recommendedJobs: 8,
+        applications: 3
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
@@ -363,9 +386,15 @@ function HomeView({ user, setCurrentView }) {
           <div className="md:w-2/3">
             <h1 className="text-4xl font-bold mb-4">Welcome back, {user?.full_name}!</h1>
             <p className="text-xl mb-6">
-              Connect with African youth across the continent. Build your network, share your goals, and create impact together.
+              Connect with African youth across the continent and discover amazing job opportunities. Build your network, share your goals, and create impact together.
             </p>
-            <div className="flex space-x-4">
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => setCurrentView('jobs')}
+                className="bg-white text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors"
+              >
+                Browse Jobs
+              </button>
               <button
                 onClick={() => setCurrentView('discover')}
                 className="bg-white text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors"
@@ -391,7 +420,7 @@ function HomeView({ user, setCurrentView }) {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-orange-400">
           <div className="flex items-center justify-between">
             <div>
@@ -414,37 +443,81 @@ function HomeView({ user, setCurrentView }) {
             </div>
           </div>
         </div>
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-blue-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Job Matches</p>
+              <p className="text-2xl font-bold text-gray-800">{stats.recommendedJobs}</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">💼</span>
+            </div>
+          </div>
+        </div>
         <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-green-400">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 font-medium">Age Group</p>
-              <p className="text-2xl font-bold text-gray-800">{user?.age} years</p>
+              <p className="text-gray-600 font-medium">Applications</p>
+              <p className="text-2xl font-bold text-gray-800">{stats.applications}</p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">🎯</span>
+              <span className="text-2xl">📄</span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Featured Opportunities */}
+      <div className="bg-white rounded-xl p-8 shadow-md">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">🚀 Ready to Take Your Career to the Next Level?</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-lg text-white">
+            <h3 className="text-xl font-bold mb-2">AfriWorkMesh</h3>
+            <p className="mb-4">Discover job opportunities across Africa. From tech startups to NGOs, find your perfect match.</p>
+            <button
+              onClick={() => setCurrentView('jobs')}
+              className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+            >
+              Browse Jobs
+            </button>
+          </div>
+          <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-lg text-white">
+            <h3 className="text-xl font-bold mb-2">Post Opportunities</h3>
+            <p className="mb-4">Have a job to offer? Register your organization and connect with talented African youth.</p>
+            <button
+              onClick={() => setCurrentView('organization')}
+              className="bg-white text-green-600 px-6 py-2 rounded-lg font-semibold hover:bg-green-50 transition-colors"
+            >
+              Get Started
+            </button>
           </div>
         </div>
       </div>
 
       {/* Call to Action */}
       <div className="bg-white rounded-xl p-8 shadow-md">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Ready to Connect?</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Start Building Your Future Today</h2>
         <p className="text-gray-600 mb-6">
-          Start building meaningful connections with African youth who share your interests and goals.
+          Join thousands of African youth who are creating opportunities, building networks, and transforming their communities.
         </p>
-        <div className="flex space-x-4">
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={() => setCurrentView('jobs')}
+            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-colors"
+          >
+            Find Jobs
+          </button>
           <button
             onClick={() => setCurrentView('discover')}
             className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-8 py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-yellow-600 transition-colors"
           >
-            Start Discovering
+            Connect with Youth
           </button>
           <button
-            onClick={() => setCurrentView('connections')}
-            className="border-2 border-orange-500 text-orange-600 px-8 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors"
+            onClick={() => setCurrentView('organization')}
+            className="border-2 border-green-500 text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors"
           >
-            View Connections
+            Post Jobs
           </button>
         </div>
       </div>
