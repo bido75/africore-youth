@@ -54,6 +54,11 @@ function App() {
         {currentView === 'discover' && <DiscoverView token={token} setCurrentView={setCurrentView} />}
         {currentView === 'connections' && <ConnectionsView token={token} />}
         {currentView === 'messages' && <MessagesView token={token} user={user} />}
+        {currentView === 'jobs' && <JobsView token={token} user={user} setCurrentView={setCurrentView} />}
+        {currentView === 'my-applications' && <MyApplicationsView token={token} />}
+        {currentView === 'organization' && <OrganizationView token={token} user={user} />}
+        {currentView === 'post-job' && <PostJobView token={token} setCurrentView={setCurrentView} />}
+        {currentView === 'manage-applications' && <ManageApplicationsView token={token} />}
       </main>
     </div>
   );
