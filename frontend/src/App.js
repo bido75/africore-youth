@@ -72,6 +72,390 @@ function App() {
   );
 }
 
+function CivicView({ token, user, setCurrentView }) {
+  const [policies, setPolicies] = useState([]);
+  const [featuredPolicies, setFeaturedPolicies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('all');
+  const [filters, setFilters] = useState({
+    category: '',
+    status: '',
+    location: ''
+  });
+
+  useEffect(() => {
+    fetchPolicies();
+    fetchFeaturedPolicies();
+  }, [filters]);
+
+  const fetchPolicies = async () => {
+    try {
+      const queryParams = new URLSearchParams();
+      Object.keys(filters).forEach(key => {
+        if (filters[key]) queryParams.append(key, filters[key]);
+      });
+
+      const response = await fetch(`${API_URL}/api/policies?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPolicies(data.policies);
+      }
+    } catch (error) {
+      console.error('Error fetching policies:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchFeaturedPolicies = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/policies?limit=6`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFeaturedPolicies(data.policies.slice(0, 6));
+      }
+    } catch (error) {
+      console.error('Error fetching featured policies:', error);
+    }
+  };
+
+  const voteOnPolicy = async (policyId, voteType) => {
+    try {
+      const response = await fetch(`${API_URL}/api/policies/${policyId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          policy_id: policyId,
+          vote_type: voteType,
+          comment: ""
+        })
+      });
+
+      if (response.ok) {
+        alert('Vote recorded successfully! Thank you for participating in civic engagement.');
+        fetchPolicies(); // Refresh the list
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Failed to record vote');
+      }
+    } catch (error) {
+      console.error('Error voting on policy:', error);
+      alert('Network error. Please try again.');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-8 text-white">
+        <div className="flex flex-col md:flex-row items-center justify-between">
+          <div className="md:w-2/3">
+            <h1 className="text-4xl font-bold mb-4">🗳️ AfriVoice</h1>
+            <p className="text-xl mb-6">
+              Your voice matters! Engage in policy discussions, provide feedback on governance, and help shape the future of Africa through democratic participation.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setCurrentView('create-policy')}
+                className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors"
+              >
+                Propose Policy
+              </button>
+              <button
+                onClick={() => setCurrentView('my-civic')}
+                className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-purple-600 transition-colors"
+              >
+                My Participation
+              </button>
+              <button
+                onClick={() => setCurrentView('civic-forums')}
+                className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-purple-600 transition-colors"
+              >
+                Forums
+              </button>
+            </div>
+          </div>
+          <div className="md:w-1/3 mt-6 md:mt-0">
+            <img 
+              src="https://images.pexels.com/photos/8846751/pexels-photo-8846751.jpeg" 
+              alt="African democracy and voting" 
+              className="rounded-lg shadow-lg w-full h-48 object-cover"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Civic Engagement Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-purple-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Active Policies</p>
+              <p className="text-2xl font-bold text-gray-800">{policies.length}</p>
+            </div>
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">📋</span>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-blue-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Youth Voices</p>
+              <p className="text-2xl font-bold text-gray-800">2,500+</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">🗣️</span>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-green-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Policies Influenced</p>
+              <p className="text-2xl font-bold text-gray-800">45</p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">✅</span>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-orange-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Community Impact</p>
+              <p className="text-2xl font-bold text-gray-800">500K+</p>
+            </div>
+            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">🌍</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-md">
+        <div className="flex border-b">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-6 py-4 font-medium transition-colors ${
+              activeTab === 'all' ? 'border-b-2 border-purple-500 text-purple-600' : 'text-gray-600 hover:text-purple-600'
+            }`}
+          >
+            All Policies ({policies.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('featured')}
+            className={`px-6 py-4 font-medium transition-colors ${
+              activeTab === 'featured' ? 'border-b-2 border-purple-500 text-purple-600' : 'text-gray-600 hover:text-purple-600'
+            }`}
+          >
+            Recent ({featuredPolicies.length})
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="p-6 border-b bg-gray-50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select
+                value={filters.category}
+                onChange={(e) => setFilters({...filters, category: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">All Categories</option>
+                <option value="education">Education</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="economy">Economy</option>
+                <option value="environment">Environment</option>
+                <option value="youth_development">Youth Development</option>
+                <option value="infrastructure">Infrastructure</option>
+                <option value="technology">Technology</option>
+                <option value="agriculture">Agriculture</option>
+                <option value="governance">Governance</option>
+                <option value="social_justice">Social Justice</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters({...filters, status: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">All Status</option>
+                <option value="open_for_feedback">Open for Feedback</option>
+                <option value="under_review">Under Review</option>
+                <option value="approved">Approved</option>
+                <option value="implemented">Implemented</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <input
+                type="text"
+                value={filters.location}
+                onChange={(e) => setFilters({...filters, location: e.target.value})}
+                placeholder="Enter location..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Policies List */}
+        <div className="p-6">
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading civic discussions...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(activeTab === 'all' ? policies : featuredPolicies).map((policy) => (
+                <PolicyCard key={policy.policy_id} policy={policy} onVote={voteOnPolicy} />
+              ))}
+            </div>
+          )}
+
+          {!loading && (activeTab === 'all' ? policies : featuredPolicies).length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🗳️</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No policies found</h3>
+              <p className="text-gray-600">Be the first to propose a policy or adjust your filters.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PolicyCard({ policy, onVote }) {
+  const formatCategory = (category) => {
+    return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  const getCategoryColor = (category) => {
+    const colors = {
+      'education': 'bg-blue-100 text-blue-800',
+      'healthcare': 'bg-red-100 text-red-800',
+      'economy': 'bg-yellow-100 text-yellow-800',
+      'environment': 'bg-green-100 text-green-800',
+      'youth_development': 'bg-purple-100 text-purple-800',
+      'infrastructure': 'bg-gray-100 text-gray-800',
+      'technology': 'bg-indigo-100 text-indigo-800',
+      'agriculture': 'bg-emerald-100 text-emerald-800',
+      'governance': 'bg-orange-100 text-orange-800',
+      'social_justice': 'bg-pink-100 text-pink-800'
+    };
+    return colors[category] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'open_for_feedback': 'bg-green-100 text-green-800',
+      'under_review': 'bg-yellow-100 text-yellow-800',
+      'approved': 'bg-blue-100 text-blue-800',
+      'implemented': 'bg-purple-100 text-purple-800',
+      'rejected': 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const totalVotes = policy.support_votes + policy.oppose_votes + policy.neutral_votes;
+  const supportPercentage = totalVotes > 0 ? (policy.support_votes / totalVotes) * 100 : 0;
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1">
+          <h3 className="text-lg font-bold text-gray-800 mb-2">{policy.title}</h3>
+          <p className="text-sm text-gray-600 mb-2">by {policy.creator_name} • {policy.creator_country}</p>
+        </div>
+      </div>
+      
+      <div className="flex flex-wrap gap-2 mb-4">
+        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(policy.category)}`}>
+          {formatCategory(policy.category)}
+        </span>
+        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(policy.status)}`}>
+          {policy.status.replace('_', ' ').toUpperCase()}
+        </span>
+        <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-xs font-medium">
+          {policy.proposal_type.replace('_', ' ').toUpperCase()}
+        </span>
+      </div>
+
+      <p className="text-gray-600 text-sm mb-4 line-clamp-3">{policy.description}</p>
+
+      {/* Voting Progress */}
+      <div className="mb-4">
+        <div className="flex justify-between text-sm mb-2">
+          <span className="text-gray-600">Community Support</span>
+          <span className="font-semibold">{Math.round(supportPercentage)}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-purple-500 h-2 rounded-full" 
+            style={{width: `${Math.min(supportPercentage, 100)}%`}}
+          ></div>
+        </div>
+        <div className="flex justify-between text-xs mt-2 text-gray-500">
+          <span>👍 {policy.support_votes}</span>
+          <span>👎 {policy.oppose_votes}</span>
+          <span>➖ {policy.neutral_votes}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+        <span>💬 {policy.feedback_count} feedback</span>
+        <span>📍 {policy.target_location}</span>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-500">
+          {policy.days_left > 0 ? `${policy.days_left} days left` : 'Feedback period ended'}
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => onVote(policy.policy_id, 'support')}
+            disabled={policy.days_left <= 0}
+            className={`px-3 py-1 rounded text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              policy.user_vote === 'support' ? 'bg-green-500 text-white' : 'bg-green-100 text-green-800 hover:bg-green-200'
+            }`}
+          >
+            👍 Support
+          </button>
+          <button
+            onClick={() => onVote(policy.policy_id, 'oppose')}
+            disabled={policy.days_left <= 0}
+            className={`px-3 py-1 rounded text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              policy.user_vote === 'oppose' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'
+            }`}
+          >
+            👎 Oppose
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MyContributionsView({ token }) {
   const [contributions, setContributions] = useState([]);
   const [loading, setLoading] = useState(true);
