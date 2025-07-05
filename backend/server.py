@@ -888,6 +888,320 @@ async def get_user_endorsements(user_id: str):
     
     return {"endorsements": endorsements}
 
+# Project endpoints
+@app.post("/api/projects")
+async def create_project(project: ProjectProposal, current_user: dict = Depends(get_current_user)):
+    project_id = str(uuid.uuid4())
+    project_doc = {
+        "project_id": project_id,
+        "creator_id": current_user["user_id"],
+        "title": project.title,
+        "description": project.description,
+        "category": project.category,
+        "funding_goal": project.funding_goal,
+        "funding_goal_type": project.funding_goal_type,
+        "current_funding": 0.0,
+        "funding_percentage": 0.0,
+        "contributor_count": 0,
+        "duration_months": project.duration_months,
+        "location": project.location,
+        "impact_description": project.impact_description,
+        "budget_breakdown": project.budget_breakdown,
+        "milestones": project.milestones,
+        "completed_milestones": [],
+        "images": project.images,
+        "team_members": project.team_members,
+        "risks_challenges": project.risks_challenges,
+        "sustainability_plan": project.sustainability_plan,
+        "status": ProjectStatus.PENDING_APPROVAL,
+        "featured": False,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
+        "deadline": datetime.utcnow() + timedelta(days=90)  # 90 days funding period
+    }
+    
+    projects_collection.insert_one(project_doc)
+    return {"message": "Project proposal submitted successfully", "project_id": project_id}
+
+@app.get("/api/projects")
+async def get_projects(skip: int = 0, limit: int = 20, category: Optional[str] = None,
+                      status: Optional[str] = None, featured: Optional[bool] = None,
+                      location: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    query = {}
+    if category:
+        query["category"] = category
+    if status:
+        query["status"] = status
+    else:
+        query["status"] = {"$in": ["active", "funded", "in_progress", "completed"]}
+    if featured is not None:
+        query["featured"] = featured
+    if location:
+        query["location"] = {"$regex": location, "$options": "i"}
+    
+    projects_cursor = projects_collection.find(query).skip(skip).limit(limit).sort("created_at", -1)
+    projects = []
+    
+    for project in projects_cursor:
+        # Get creator info
+        creator = users_collection.find_one({"user_id": project["creator_id"]})
+        
+        project_data = {
+            "project_id": project["project_id"],
+            "title": project["title"],
+            "description": project["description"],
+            "category": project["category"],
+            "funding_goal": project["funding_goal"],
+            "current_funding": project.get("current_funding", 0.0),
+            "funding_percentage": project.get("funding_percentage", 0.0),
+            "contributor_count": project.get("contributor_count", 0),
+            "duration_months": project["duration_months"],
+            "location": project["location"],
+            "impact_description": project["impact_description"],
+            "images": project.get("images", []),
+            "status": project["status"],
+            "featured": project.get("featured", False),
+            "created_at": project["created_at"],
+            "deadline": project.get("deadline"),
+            "creator_name": creator["full_name"] if creator else "Unknown",
+            "creator_country": creator["country"] if creator else "Unknown",
+            "days_left": (project.get("deadline") - datetime.utcnow()).days if project.get("deadline") else 0
+        }
+        projects.append(project_data)
+    
+    return {"projects": projects}
+
+@app.get("/api/projects/{project_id}")
+async def get_project(project_id: str, current_user: dict = Depends(get_current_user)):
+    project = projects_collection.find_one({"project_id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get creator info
+    creator = users_collection.find_one({"user_id": project["creator_id"]})
+    
+    # Get recent contributions
+    recent_contributions = list(contributions_collection.find({
+        "project_id": project_id,
+        "anonymous": False
+    }).sort("created_at", -1).limit(10))
+    
+    for contribution in recent_contributions:
+        contributor = users_collection.find_one({"user_id": contribution["contributor_id"]})
+        contribution["contributor_name"] = contributor["full_name"] if contributor else "Anonymous"
+        contribution["contributor_country"] = contributor["country"] if contributor else ""
+    
+    # Get project updates
+    updates = list(project_updates_collection.find({
+        "project_id": project_id
+    }).sort("created_at", -1))
+    
+    project_data = {
+        "project_id": project["project_id"],
+        "title": project["title"],
+        "description": project["description"],
+        "category": project["category"],
+        "funding_goal": project["funding_goal"],
+        "funding_goal_type": project["funding_goal_type"],
+        "current_funding": project.get("current_funding", 0.0),
+        "funding_percentage": project.get("funding_percentage", 0.0),
+        "contributor_count": project.get("contributor_count", 0),
+        "duration_months": project["duration_months"],
+        "location": project["location"],
+        "impact_description": project["impact_description"],
+        "budget_breakdown": project["budget_breakdown"],
+        "milestones": project["milestones"],
+        "completed_milestones": project.get("completed_milestones", []),
+        "images": project.get("images", []),
+        "team_members": project.get("team_members", ""),
+        "risks_challenges": project.get("risks_challenges", ""),
+        "sustainability_plan": project.get("sustainability_plan", ""),
+        "status": project["status"],
+        "featured": project.get("featured", False),
+        "created_at": project["created_at"],
+        "deadline": project.get("deadline"),
+        "creator_id": project["creator_id"],
+        "creator_name": creator["full_name"] if creator else "Unknown",
+        "creator_country": creator["country"] if creator else "Unknown",
+        "creator_bio": creator.get("bio", "") if creator else "",
+        "days_left": (project.get("deadline") - datetime.utcnow()).days if project.get("deadline") else 0,
+        "recent_contributions": recent_contributions,
+        "updates": updates
+    }
+    
+    return project_data
+
+@app.get("/api/projects/my")
+async def get_my_projects(current_user: dict = Depends(get_current_user)):
+    projects_cursor = projects_collection.find({
+        "creator_id": current_user["user_id"]
+    }).sort("created_at", -1)
+    
+    projects = []
+    for project in projects_cursor:
+        project_data = {
+            "project_id": project["project_id"],
+            "title": project["title"],
+            "category": project["category"],
+            "funding_goal": project["funding_goal"],
+            "current_funding": project.get("current_funding", 0.0),
+            "funding_percentage": project.get("funding_percentage", 0.0),
+            "contributor_count": project.get("contributor_count", 0),
+            "status": project["status"],
+            "created_at": project["created_at"],
+            "deadline": project.get("deadline"),
+            "days_left": (project.get("deadline") - datetime.utcnow()).days if project.get("deadline") else 0
+        }
+        projects.append(project_data)
+    
+    return {"projects": projects}
+
+@app.post("/api/projects/{project_id}/contribute")
+async def contribute_to_project(project_id: str, contribution: ProjectContribution, current_user: dict = Depends(get_current_user)):
+    # Get project
+    project = projects_collection.find_one({"project_id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    if project["status"] not in ["active", "funded"]:
+        raise HTTPException(status_code=400, detail="Project is not accepting contributions")
+    
+    # Create contribution record
+    contribution_id = str(uuid.uuid4())
+    contribution_doc = {
+        "contribution_id": contribution_id,
+        "project_id": project_id,
+        "contributor_id": current_user["user_id"],
+        "amount": contribution.amount,
+        "anonymous": contribution.anonymous,
+        "message": contribution.message,
+        "created_at": datetime.utcnow()
+    }
+    
+    contributions_collection.insert_one(contribution_doc)
+    
+    # Update project funding
+    new_funding = project.get("current_funding", 0.0) + contribution.amount
+    new_percentage = (new_funding / project["funding_goal"]) * 100
+    new_contributor_count = project.get("contributor_count", 0) + 1
+    
+    # Update project status if funding goal reached
+    new_status = project["status"]
+    if project["funding_goal_type"] == "fixed" and new_funding >= project["funding_goal"]:
+        new_status = "funded"
+    
+    projects_collection.update_one(
+        {"project_id": project_id},
+        {
+            "$set": {
+                "current_funding": new_funding,
+                "funding_percentage": new_percentage,
+                "contributor_count": new_contributor_count,
+                "status": new_status,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    return {"message": "Contribution successful", "contribution_id": contribution_id}
+
+@app.get("/api/contributions/my")
+async def get_my_contributions(current_user: dict = Depends(get_current_user)):
+    contributions_cursor = contributions_collection.find({
+        "contributor_id": current_user["user_id"]
+    }).sort("created_at", -1)
+    
+    contributions = []
+    for contribution in contributions_cursor:
+        # Get project info
+        project = projects_collection.find_one({"project_id": contribution["project_id"]})
+        
+        contribution_data = {
+            "contribution_id": contribution["contribution_id"],
+            "project_id": contribution["project_id"],
+            "project_title": project["title"] if project else "Unknown",
+            "project_status": project["status"] if project else "Unknown",
+            "amount": contribution["amount"],
+            "message": contribution.get("message", ""),
+            "created_at": contribution["created_at"]
+        }
+        contributions.append(contribution_data)
+    
+    return {"contributions": contributions}
+
+@app.post("/api/projects/{project_id}/updates")
+async def add_project_update(project_id: str, update: ProjectUpdate, current_user: dict = Depends(get_current_user)):
+    # Check if user owns the project
+    project = projects_collection.find_one({"project_id": project_id})
+    if not project or project["creator_id"] != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to update this project")
+    
+    update_id = str(uuid.uuid4())
+    update_doc = {
+        "update_id": update_id,
+        "project_id": project_id,
+        "title": update.title,
+        "content": update.content,
+        "images": update.images,
+        "milestone_completed": update.milestone_completed,
+        "created_at": datetime.utcnow()
+    }
+    
+    project_updates_collection.insert_one(update_doc)
+    
+    # Update completed milestones if specified
+    if update.milestone_completed:
+        completed_milestones = project.get("completed_milestones", [])
+        if update.milestone_completed not in completed_milestones:
+            completed_milestones.append(update.milestone_completed)
+            projects_collection.update_one(
+                {"project_id": project_id},
+                {"$set": {"completed_milestones": completed_milestones, "updated_at": datetime.utcnow()}}
+            )
+    
+    return {"message": "Project update added successfully", "update_id": update_id}
+
+@app.post("/api/projects/{project_id}/comments")
+async def add_project_comment(project_id: str, comment: ProjectComment, current_user: dict = Depends(get_current_user)):
+    # Check if project exists
+    project = projects_collection.find_one({"project_id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    comment_id = str(uuid.uuid4())
+    comment_doc = {
+        "comment_id": comment_id,
+        "project_id": project_id,
+        "commenter_id": current_user["user_id"],
+        "content": comment.content,
+        "reply_to": comment.reply_to,
+        "created_at": datetime.utcnow()
+    }
+    
+    project_comments_collection.insert_one(comment_doc)
+    return {"message": "Comment added successfully", "comment_id": comment_id}
+
+@app.get("/api/projects/{project_id}/comments")
+async def get_project_comments(project_id: str, current_user: dict = Depends(get_current_user)):
+    comments_cursor = project_comments_collection.find({
+        "project_id": project_id
+    }).sort("created_at", 1)
+    
+    comments = []
+    for comment in comments_cursor:
+        commenter = users_collection.find_one({"user_id": comment["commenter_id"]})
+        comment_data = {
+            "comment_id": comment["comment_id"],
+            "content": comment["content"],
+            "reply_to": comment.get("reply_to"),
+            "created_at": comment["created_at"],
+            "commenter_name": commenter["full_name"] if commenter else "Unknown",
+            "commenter_country": commenter["country"] if commenter else "Unknown"
+        }
+        comments.append(comment_data)
+    
+    return {"comments": comments}
+
 # Message endpoints (existing)
 @app.post("/api/messages")
 async def send_message(message: Message, current_user: dict = Depends(get_current_user)):
