@@ -365,6 +365,57 @@ class CivicForum(BaseModel):
     location: str
     moderators: List[str] = []
 
+class Course(BaseModel):
+    title: str
+    description: str
+    category: CourseCategory
+    level: CourseLevel
+    duration_hours: int
+    price: float = 0.0  # 0 for free courses
+    thumbnail_url: Optional[str] = ""
+    learning_objectives: List[str]
+    prerequisites: List[str] = []
+    skills_gained: List[str] = []
+    certificate_type: CertificateType = CertificateType.COMPLETION
+
+class CourseModule(BaseModel):
+    course_id: str
+    title: str
+    description: str
+    order_index: int
+    duration_minutes: int
+
+class CourseLesson(BaseModel):
+    module_id: str
+    title: str
+    description: str
+    content: str
+    lesson_type: str  # "video", "text", "assignment", "quiz"
+    content_url: Optional[str] = ""
+    order_index: int
+    duration_minutes: int
+
+class CourseEnrollment(BaseModel):
+    course_id: str
+
+class CourseReview(BaseModel):
+    course_id: str
+    rating: int  # 1-5 stars
+    review_text: str
+
+class MentorshipRequest(BaseModel):
+    mentor_id: str
+    skill_area: str
+    goals: str
+    duration_weeks: int
+    message: str
+
+class SkillAssessment(BaseModel):
+    skill_name: str
+    assessment_type: str  # "self_assessment", "peer_review", "test"
+    score: int  # 1-100
+    notes: Optional[str] = ""
+
 class Token(BaseModel):
     access_token: str
     token_type: str
