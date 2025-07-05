@@ -1453,94 +1453,449 @@ function JobsView({ token, user, setCurrentView }) {
   );
 }
 
-function JobCard({ job, onApply }) {
-  const formatJobType = (type) => {
-    return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+function MyApplicationsView({ token }) {
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  const fetchApplications = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/applications`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setApplications(data.applications);
+      }
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const formatCategory = (category) => {
-    return category.charAt(0).toUpperCase() + category.slice(1);
-  };
-
-  const getJobTypeColor = (type) => {
+  const getStatusColor = (status) => {
     const colors = {
-      'full_time': 'bg-green-100 text-green-800',
-      'part_time': 'bg-blue-100 text-blue-800',
-      'internship': 'bg-purple-100 text-purple-800',
-      'gig_work': 'bg-orange-100 text-orange-800',
-      'project': 'bg-yellow-100 text-yellow-800',
-      'volunteer': 'bg-red-100 text-red-800'
+      'applied': 'bg-blue-100 text-blue-800',
+      'reviewed': 'bg-yellow-100 text-yellow-800',
+      'shortlisted': 'bg-purple-100 text-purple-800',
+      'interviewed': 'bg-orange-100 text-orange-800',
+      'accepted': 'bg-green-100 text-green-800',
+      'rejected': 'bg-red-100 text-red-800'
     };
-    return colors[type] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const formatStatus = (status) => {
+    return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="text-xl font-bold text-gray-800">{job.title}</h3>
-            {job.match_score && (
-              <span className="ml-4 bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">
-                {job.match_score}% match
-              </span>
-            )}
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">📄 My Job Applications</h2>
+        
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading your applications...</p>
           </div>
-          <p className="text-gray-600 mb-2">{job.organization_name}</p>
-          <p className="text-sm text-gray-500 mb-3">{job.location}</p>
-          
-          <div className="flex flex-wrap gap-2 mb-3">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getJobTypeColor(job.job_type)}`}>
-              {formatJobType(job.job_type)}
-            </span>
-            <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
-              {formatCategory(job.job_category)}
-            </span>
-            {job.salary_range && (
-              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                {job.salary_range}
-              </span>
-            )}
+        ) : applications.length > 0 ? (
+          <div className="space-y-6">
+            {applications.map((application) => (
+              <div key={application.application_id} className="border border-gray-200 rounded-lg p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-1">{application.job_title}</h3>
+                    <p className="text-gray-600 mb-2">{application.organization_name}</p>
+                    <p className="text-sm text-gray-500">Applied on {new Date(application.applied_at).toLocaleDateString()}</p>
+                  </div>
+                  <div className="mt-4 md:mt-0">
+                    <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(application.status)}`}>
+                      {formatStatus(application.status)}
+                    </span>
+                  </div>
+                </div>
+                
+                {application.cover_letter && (
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-gray-800 mb-2">Cover Letter</h4>
+                    <p className="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg">{application.cover_letter}</p>
+                  </div>
+                )}
+                
+                {application.portfolio_links && (
+                  <div>
+                    <h4 className="font-semibold text-gray-800 mb-2">Portfolio Links</h4>
+                    <a 
+                      href={application.portfolio_links} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      🔗 {application.portfolio_links}
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </div>
-      </div>
-
-      <p className="text-gray-600 mb-4 line-clamp-3">{job.description}</p>
-
-      <div className="mb-4">
-        <h4 className="font-semibold text-gray-800 mb-2">Required Skills</h4>
-        <div className="flex flex-wrap gap-2">
-          {job.skills_required?.slice(0, 5).map((skill, index) => (
-            <span key={index} className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-              {skill}
-            </span>
-          ))}
-          {job.skills_required?.length > 5 && (
-            <span className="text-orange-600 text-xs">+{job.skills_required.length - 5} more</span>
-          )}
-        </div>
-        {job.matching_skills && job.matching_skills.length > 0 && (
-          <div className="mt-2">
-            <p className="text-sm text-green-600 font-medium">
-              ✅ You have: {job.matching_skills.join(', ')}
-            </p>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📝</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No Applications Yet</h3>
+            <p className="text-gray-600 mb-6">You haven't applied to any jobs yet. Start exploring opportunities!</p>
+            <button className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors">
+              Browse Jobs
+            </button>
           </div>
         )}
       </div>
+    </div>
+  );
+}
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-500">
-          Posted {new Date(job.created_at).toLocaleDateString()}
-          {job.deadline && (
-            <span className="ml-2">• Deadline: {new Date(job.deadline).toLocaleDateString()}</span>
+function OrganizationView({ token, user }) {
+  const [organization, setOrganization] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    organization_type: '',
+    country: user?.country || '',
+    website: '',
+    contact_email: user?.email || '',
+    contact_phone: '',
+    size: '',
+    founded_year: ''
+  });
+
+  useEffect(() => {
+    checkOrganization();
+  }, []);
+
+  const checkOrganization = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/organizations`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Find user's organization (simplified - in real app would have proper endpoint)
+        setOrganization(data.organizations.length > 0 ? data.organizations[0] : null);
+      }
+    } catch (error) {
+      console.error('Error checking organization:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${API_URL}/api/organization/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...formData,
+          founded_year: formData.founded_year ? parseInt(formData.founded_year) : null
+        })
+      });
+
+      if (response.ok) {
+        alert('Organization registered successfully!');
+        setShowRegisterForm(false);
+        checkOrganization();
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Failed to register organization');
+      }
+    } catch (error) {
+      console.error('Error registering organization:', error);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading organization info...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {!organization ? (
+        <div className="bg-white rounded-xl shadow-md p-8">
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">🏢</div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">Register Your Organization</h2>
+            <p className="text-gray-600 mb-6">
+              Create job opportunities for African youth. Register your organization to start posting jobs.
+            </p>
+            {!showRegisterForm && (
+              <button
+                onClick={() => setShowRegisterForm(true)}
+                className="bg-green-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+              >
+                Get Started
+              </button>
+            )}
+          </div>
+
+          {showRegisterForm && (
+            <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Your Organization Name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Organization Type</label>
+                  <select
+                    name="organization_type"
+                    value={formData.organization_type}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">Select type</option>
+                    <option value="startup">Startup</option>
+                    <option value="ngo">NGO</option>
+                    <option value="government">Government</option>
+                    <option value="corporation">Corporation</option>
+                    <option value="university">University</option>
+                    <option value="cooperative">Cooperative</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  required
+                  rows="4"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Describe your organization and mission..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                  <input
+                    type="text"
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Website (optional)</label>
+                  <input
+                    type="url"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="https://yourwebsite.com"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
+                  <input
+                    type="email"
+                    name="contact_email"
+                    value={formData.contact_email}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone (optional)</label>
+                  <input
+                    type="tel"
+                    name="contact_phone"
+                    value={formData.contact_phone}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Organization Size (optional)</label>
+                  <select
+                    name="size"
+                    value={formData.size}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">Select size</option>
+                    <option value="1-10">1-10 employees</option>
+                    <option value="11-50">11-50 employees</option>
+                    <option value="51-200">51-200 employees</option>
+                    <option value="201-1000">201-1000 employees</option>
+                    <option value="1000+">1000+ employees</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Founded Year (optional)</label>
+                  <input
+                    type="number"
+                    name="founded_year"
+                    value={formData.founded_year}
+                    onChange={handleChange}
+                    min="1900"
+                    max={new Date().getFullYear()}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="2020"
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-4">
+                <button
+                  type="submit"
+                  className="bg-green-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+                >
+                  Register Organization
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterForm(false)}
+                  className="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           )}
         </div>
-        <button
-          onClick={() => onApply(job.job_id)}
-          className="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
-        >
-          Apply Now
-        </button>
+      ) : (
+        <OrganizationDashboard organization={organization} token={token} />
+      )}
+    </div>
+  );
+}
+
+function OrganizationDashboard({ organization, token }) {
+  return (
+    <div className="space-y-6">
+      {/* Organization Header */}
+      <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-8 text-white">
+        <div className="flex items-center space-x-6">
+          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-green-600 text-2xl font-bold">
+            {organization.name.charAt(0)}
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold">{organization.name}</h1>
+            <p className="text-xl opacity-90">{organization.organization_type} • {organization.country}</p>
+            {organization.verified && (
+              <span className="inline-flex items-center mt-2 px-3 py-1 bg-white/20 rounded-full text-sm">
+                ✅ Verified Organization
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-xl p-6 shadow-md">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📝 Post New Job</h3>
+          <p className="text-gray-600 mb-4">Create a new job opportunity for African youth.</p>
+          <button className="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors w-full">
+            Post Job
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📄 Manage Applications</h3>
+          <p className="text-gray-600 mb-4">Review and manage job applications.</p>
+          <button className="bg-purple-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-600 transition-colors w-full">
+            View Applications
+          </button>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📊 Analytics</h3>
+          <p className="text-gray-600 mb-4">View job posting performance and metrics.</p>
+          <button className="bg-orange-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors w-full">
+            View Analytics
+          </button>
+        </div>
+      </div>
+
+      {/* Organization Details */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">Organization Details</h2>
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold text-gray-800 mb-2">Description</h3>
+            <p className="text-gray-600">{organization.description}</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-2">Contact Information</h3>
+              <div className="space-y-1 text-gray-600">
+                <p>📧 {organization.contact_email}</p>
+                {organization.contact_phone && <p>📞 {organization.contact_phone}</p>}
+                {organization.website && (
+                  <a href={organization.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                    🌐 {organization.website}
+                  </a>
+                )}
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-800 mb-2">Organization Info</h3>
+              <div className="space-y-1 text-gray-600">
+                {organization.size && <p>👥 {organization.size}</p>}
+                {organization.founded_year && <p>📅 Founded in {organization.founded_year}</p>}
+                <p>📍 {organization.country}</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
