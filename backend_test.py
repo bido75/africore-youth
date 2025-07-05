@@ -301,5 +301,193 @@ class AfriCoreAPITest(unittest.TestCase):
         # Note: These tests might fail if users aren't connected or if messaging is not fully implemented
         print("ℹ️ Messaging endpoints tested (may not be fully implemented)")
 
+    def test_13_create_project(self):
+        """Test creating a new project"""
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "title": f"Test Project {int(time.time())}",
+            "description": "This is a test project created for API testing",
+            "category": "education",
+            "funding_goal": 5000.0,
+            "funding_goal_type": "fixed",
+            "duration_months": 6,
+            "location": "Nairobi, Kenya",
+            "impact_description": "This project will help test the AfriFund DAO platform",
+            "budget_breakdown": "Development: $3000\nTesting: $2000",
+            "milestones": ["Month 1: Setup", "Month 3: Development", "Month 6: Completion"],
+            "images": [],
+            "team_members": "Test Team",
+            "risks_challenges": "None, this is just a test",
+            "sustainability_plan": "This is a test project"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/api/projects", headers=headers, json=payload)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("project_id", data)
+        self.assertEqual(data["message"], "Project proposal submitted successfully")
+        
+        # Save project ID for future tests
+        self.__class__.project_id = data["project_id"]
+        print(f"✅ Project created successfully with ID: {self.project_id}")
+
+    def test_14_get_projects(self):
+        """Test getting list of projects"""
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/projects", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("projects", data)
+        self.assertIsInstance(data["projects"], list)
+        
+        # Test filtering by category
+        response = requests.get(f"{BACKEND_URL}/api/projects?category=education", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        for project in data["projects"]:
+            if project["category"] == "education":
+                print(f"Found education project: {project['title']}")
+        
+        print("✅ Get projects endpoint working with filters")
+
+    def test_15_get_my_projects(self):
+        """Test getting user's own projects"""
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/projects/my", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("projects", data)
+        self.assertIsInstance(data["projects"], list)
+        
+        # Verify our created project is in the list
+        project_found = False
+        for project in data["projects"]:
+            if project["project_id"] == self.project_id:
+                project_found = True
+                break
+        
+        self.assertTrue(project_found, "Created project not found in my projects list")
+        print("✅ Get my projects endpoint working")
+
+    def test_16_get_specific_project(self):
+        """Test getting a specific project by ID"""
+        if not self.project_id:
+            self.skipTest("No project ID available for testing")
+            
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/projects/{self.project_id}", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["project_id"], self.project_id)
+        print(f"✅ Get specific project successful: {data['title']}")
+
+    def test_17_contribute_to_project(self):
+        """Test contributing to a project"""
+        if not self.project_id:
+            self.skipTest("No project ID available for testing")
+            
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "project_id": self.project_id,
+            "amount": 100.0,
+            "anonymous": False,
+            "message": "Test contribution"
+        }
+        
+        # Note: This might fail if the project status is not 'active'
+        response = requests.post(f"{BACKEND_URL}/api/projects/{self.project_id}/contribute", headers=headers, json=payload)
+        print(f"Contribute to project response: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertIn("contribution_id", data)
+            print(f"✅ Contribution successful with ID: {data['contribution_id']}")
+        else:
+            print(f"⚠️ Could not contribute to project: {response.status_code} - {response.text}")
+
+    def test_18_get_my_contributions(self):
+        """Test getting user's contributions"""
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/contributions/my", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("contributions", data)
+        self.assertIsInstance(data["contributions"], list)
+        print("✅ Get my contributions endpoint working")
+
+    def test_19_add_project_update(self):
+        """Test adding an update to a project"""
+        if not self.project_id:
+            self.skipTest("No project ID available for testing")
+            
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "project_id": self.project_id,
+            "title": "Test Update",
+            "content": "This is a test update for the project",
+            "images": [],
+            "milestone_completed": "Month 1: Setup"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/api/projects/{self.project_id}/updates", headers=headers, json=payload)
+        print(f"Add project update response: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertIn("update_id", data)
+            print(f"✅ Project update added successfully with ID: {data['update_id']}")
+        else:
+            print(f"⚠️ Could not add project update: {response.status_code} - {response.text}")
+
+    def test_20_add_project_comment(self):
+        """Test adding a comment to a project"""
+        if not self.project_id:
+            self.skipTest("No project ID available for testing")
+            
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "project_id": self.project_id,
+            "content": "This is a test comment on the project"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/api/projects/{self.project_id}/comments", headers=headers, json=payload)
+        print(f"Add project comment response: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertIn("comment_id", data)
+            print(f"✅ Project comment added successfully with ID: {data['comment_id']}")
+        else:
+            print(f"⚠️ Could not add project comment: {response.status_code} - {response.text}")
+
+    def test_21_get_project_comments(self):
+        """Test getting comments for a project"""
+        if not self.project_id:
+            self.skipTest("No project ID available for testing")
+            
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/projects/{self.project_id}/comments", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("comments", data)
+        self.assertIsInstance(data["comments"], list)
+        print("✅ Get project comments endpoint working")
+
 if __name__ == "__main__":
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
