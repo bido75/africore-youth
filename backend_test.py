@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://bbb35af7-66ff-4e4e-9854-48f9b6bbed70.preview.emergentagent.com"
+BACKEND_URL = "https://631d4401-442b-4235-96d9-59ab05a2a184.preview.emergentagent.com"
 
 class AfriCoreAPITest(unittest.TestCase):
     @classmethod
