@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, EmailStr
 from pymongo import MongoClient
 from passlib.context import CryptContext
@@ -8,15 +10,24 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import os
 import uuid
-from typing import Optional, List
+from typing import Optional, List, Any
 import logging
 from enum import Enum
+from bson import ObjectId
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AfriCore - Pan-African Youth Network, Employment & Funding Platform")
+# Custom JSON Response to handle MongoDB ObjectId serialization
+class CustomJSONResponse(JSONResponse):
+    def render(self, content: Any) -> bytes:
+        return super().render(jsonable_encoder(content, custom_encoder={ObjectId: str}))
+
+app = FastAPI(
+    title="AfriCore - Pan-African Youth Network, Employment & Funding Platform",
+    default_response_class=CustomJSONResponse
+)
 
 # CORS middleware
 app.add_middleware(
