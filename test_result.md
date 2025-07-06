@@ -210,15 +210,18 @@ frontend:
 
   - task: "Profile Management Frontend"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Full CRUD profile management implemented with editable forms, skills, interests, bio, social links"
+      - working: false
+        agent: "testing"
+        comment: "Profile management functionality is not working due to authentication issues. Backend returns 401 Unauthorized for login attempts and 422 Unprocessable Entity for registration attempts. Frontend shows React error: 'Objects are not valid as a React child'."
 
   - task: "User Discovery & Connections Frontend"
     implemented: true
