@@ -73,6 +73,267 @@ function App() {
   );
 }
 
+// Civic Engagement with Full CRUD
+function CivicEngagementView({ token, user, setCurrentView }) {
+  const [policies, setPolicies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+
+  useEffect(() => {
+    fetchPolicies();
+  }, []);
+
+  const fetchPolicies = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/policies`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPolicies(data.policies || []);
+      }
+    } catch (error) {
+      console.error('Error fetching policies:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const participateInPolicy = async (policyId, participationType, feedback = '') => {
+    try {
+      const response = await fetch(`${API_URL}/api/civic_participation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          policy_id: policyId,
+          participation_type: participationType,
+          feedback: feedback
+        })
+      });
+
+      if (response.ok) {
+        // Update policy participation status
+        setPolicies(policies.map(policy => 
+          policy.policy_id === policyId 
+            ? { ...policy, has_participated: true }
+            : policy
+        ));
+      }
+    } catch (error) {
+      console.error('Error participating in policy:', error);
+    }
+  };
+
+  const filteredPolicies = policies.filter(policy => {
+    const matchesTitle = policy.title.toLowerCase().includes(filter.toLowerCase());
+    const matchesCategory = categoryFilter === '' || policy.category === categoryFilter;
+    return matchesTitle && matchesCategory;
+  });
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading civic engagement opportunities...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-8 text-white">
+        <h1 className="text-4xl font-bold mb-4">🏛️ AfriVoice</h1>
+        <p className="text-xl mb-6">
+          Shape Africa's future through civic engagement. Participate in policy discussions, provide feedback, and make your voice heard.
+        </p>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => setCurrentView('create-policy')}
+            className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors"
+          >
+            Propose Policy
+          </button>
+          <button
+            onClick={() => setCurrentView('my-civic-participation')}
+            className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-purple-600 transition-colors"
+          >
+            My Participation
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-md p-6">
+        {/* Filters */}
+        <div className="mb-6 flex space-x-4">
+          <input
+            type="text"
+            placeholder="Search policies..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          >
+            <option value="">All Categories</option>
+            <option value="education">Education</option>
+            <option value="healthcare">Healthcare</option>
+            <option value="environment">Environment</option>
+            <option value="economy">Economy</option>
+            <option value="technology">Technology</option>
+            <option value="infrastructure">Infrastructure</option>
+            <option value="social">Social Issues</option>
+          </select>
+        </div>
+
+        {/* Policy Grid */}
+        <div className="space-y-6">
+          {filteredPolicies.map(policy => (
+            <PolicyCard 
+              key={policy.policy_id} 
+              policy={policy} 
+              onParticipate={participateInPolicy} 
+            />
+          ))}
+        </div>
+
+        {filteredPolicies.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🏛️</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No policies found</h3>
+            <p className="text-gray-600">Try adjusting your search filters or be the first to propose a policy!</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PolicyCard({ policy, onParticipate }) {
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [feedback, setFeedback] = useState('');
+
+  const handleVote = (voteType) => {
+    onParticipate(policy.policy_id, voteType);
+  };
+
+  const handleFeedback = () => {
+    if (feedback.trim()) {
+      onParticipate(policy.policy_id, 'feedback', feedback);
+      setShowFeedbackForm(false);
+      setFeedback('');
+    }
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex-1">
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">{policy.title}</h3>
+          <p className="text-sm text-gray-600 mb-2">by {policy.creator_name}</p>
+          <div className="flex space-x-2 mb-3">
+            <span className="inline-block bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+              {policy.category}
+            </span>
+            <span className="inline-block bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
+              {policy.proposal_type}
+            </span>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-500">
+            Target: {policy.target_location}
+          </p>
+          <p className="text-sm text-gray-500">
+            Timeline: {policy.implementation_timeline}
+          </p>
+        </div>
+      </div>
+
+      <p className="text-gray-700 mb-4">{policy.description}</p>
+
+      <div className="mb-4">
+        <h4 className="font-medium text-gray-800 mb-2">Expected Impact:</h4>
+        <p className="text-sm text-gray-600">{policy.expected_impact}</p>
+      </div>
+
+      {policy.resources_needed && (
+        <div className="mb-4">
+          <h4 className="font-medium text-gray-800 mb-2">Resources Needed:</h4>
+          <p className="text-sm text-gray-600">{policy.resources_needed}</p>
+        </div>
+      )}
+
+      {policy.has_participated ? (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <p className="text-green-800 text-sm font-medium">✓ You have participated in this policy discussion</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex space-x-2">
+            <button
+              onClick={() => handleVote('support')}
+              className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-colors"
+            >
+              👍 Support
+            </button>
+            <button
+              onClick={() => handleVote('oppose')}
+              className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-colors"
+            >
+              👎 Oppose
+            </button>
+            <button
+              onClick={() => setShowFeedbackForm(!showFeedbackForm)}
+              className="flex-1 bg-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-600 transition-colors"
+            >
+              💬 Feedback
+            </button>
+          </div>
+
+          {showFeedbackForm && (
+            <div className="space-y-2">
+              <textarea
+                placeholder="Share your thoughts and suggestions..."
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                rows="3"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleFeedback}
+                  className="flex-1 bg-purple-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-purple-600 transition-colors"
+                >
+                  Submit Feedback
+                </button>
+                <button
+                  onClick={() => setShowFeedbackForm(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Authentication Component
 function AuthScreen({ setToken, setUser }) {
   const [isLogin, setIsLogin] = useState(true);
