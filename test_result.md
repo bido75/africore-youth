@@ -255,15 +255,18 @@ frontend:
 
   - task: "Project Crowdfunding Frontend"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Project creation, funding, contribution tracking fully implemented"
+      - working: false
+        agent: "testing"
+        comment: "Project Crowdfunding functionality cannot be tested due to authentication issues. Additionally, backend logs show 400 Bad Request for project contribution endpoint."
 
   - task: "Civic Engagement Frontend"
     implemented: true
