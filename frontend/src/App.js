@@ -76,6 +76,276 @@ function App() {
   );
 }
 
+function EducationView({ token, user, setCurrentView }) {
+  const [courses, setCourses] = useState([]);
+  const [featuredCourses, setFeaturedCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('all');
+  const [filters, setFilters] = useState({
+    category: '',
+    level: '',
+    free_only: false
+  });
+
+  useEffect(() => {
+    fetchCourses();
+    fetchFeaturedCourses();
+  }, [filters]);
+
+  const fetchCourses = async () => {
+    try {
+      const queryParams = new URLSearchParams();
+      Object.keys(filters).forEach(key => {
+        if (filters[key] !== '' && filters[key] !== false) {
+          queryParams.append(key, filters[key]);
+        }
+      });
+
+      const response = await fetch(`${API_URL}/api/courses?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(data.courses);
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchFeaturedCourses = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/courses?limit=6`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFeaturedCourses(data.courses.slice(0, 6));
+      }
+    } catch (error) {
+      console.error('Error fetching featured courses:', error);
+    }
+  };
+
+  const enrollInCourse = async (courseId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/courses/${courseId}/enroll`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        alert('Successfully enrolled in the course! Start learning today.');
+        fetchCourses(); // Refresh the list
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Failed to enroll in course');
+      }
+    } catch (error) {
+      console.error('Error enrolling in course:', error);
+      alert('Network error. Please try again.');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-8 text-white">
+        <div className="flex flex-col md:flex-row items-center justify-between">
+          <div className="md:w-2/3">
+            <h1 className="text-4xl font-bold mb-4">🎓 EduNations</h1>
+            <p className="text-xl mb-6">
+              Unlock your potential with world-class education. Learn new skills, earn certifications, and build your career with courses designed for African youth.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setCurrentView('create-course')}
+                className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+              >
+                Teach a Course
+              </button>
+              <button
+                onClick={() => setCurrentView('my-courses')}
+                className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+              >
+                My Learning
+              </button>
+              <button
+                onClick={() => setCurrentView('mentorship')}
+                className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+              >
+                Find Mentor
+              </button>
+            </div>
+          </div>
+          <div className="md:w-1/3 mt-6 md:mt-0">
+            <img 
+              src="https://images.unsplash.com/photo-1541178735493-479c1a27ed24" 
+              alt="African digital learning" 
+              className="rounded-lg shadow-lg w-full h-48 object-cover"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Learning Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-blue-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Available Courses</p>
+              <p className="text-2xl font-bold text-gray-800">{courses.length}</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">📚</span>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-green-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Active Learners</p>
+              <p className="text-2xl font-bold text-gray-800">5,200+</p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">👨‍🎓</span>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-purple-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Certificates Issued</p>
+              <p className="text-2xl font-bold text-gray-800">1,800+</p>
+            </div>
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">🏆</span>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-orange-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 font-medium">Expert Instructors</p>
+              <p className="text-2xl font-bold text-gray-800">350+</p>
+            </div>
+            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+              <span className="text-2xl">👩‍🏫</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-md">
+        <div className="flex border-b">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-6 py-4 font-medium transition-colors ${
+              activeTab === 'all' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            All Courses ({courses.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('featured')}
+            className={`px-6 py-4 font-medium transition-colors ${
+              activeTab === 'featured' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            Popular ({featuredCourses.length})
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="p-6 border-b bg-gray-50">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <select
+                value={filters.category}
+                onChange={(e) => setFilters({...filters, category: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Categories</option>
+                <option value="technology">Technology</option>
+                <option value="business">Business</option>
+                <option value="design">Design</option>
+                <option value="marketing">Marketing</option>
+                <option value="agriculture">Agriculture</option>
+                <option value="health">Health</option>
+                <option value="education">Education</option>
+                <option value="arts">Arts</option>
+                <option value="languages">Languages</option>
+                <option value="personal_development">Personal Development</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Level</label>
+              <select
+                value={filters.level}
+                onChange={(e) => setFilters({...filters, level: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Levels</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+                <option value="expert">Expert</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price</label>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={filters.free_only}
+                  onChange={(e) => setFilters({...filters, free_only: e.target.checked})}
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-700">Free courses only</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Courses List */}
+        <div className="p-6">
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading amazing courses...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(activeTab === 'all' ? courses : featuredCourses).map((course) => (
+                <CourseCard key={course.course_id} course={course} onEnroll={enrollInCourse} />
+              ))}
+            </div>
+          )}
+
+          {!loading && (activeTab === 'all' ? courses : featuredCourses).length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📚</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No courses found</h3>
+              <p className="text-gray-600">Adjust your filters or be the first to create a course!</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
 function MyCivicParticipationView({ token, setCurrentView }) {
   const [participation, setParticipation] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
