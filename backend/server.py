@@ -281,6 +281,10 @@ class OrganizationProfile(BaseModel):
     size: Optional[str] = ""
     founded_year: Optional[int] = None
 
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
 class JobPost(BaseModel):
     title: str
     description: str
