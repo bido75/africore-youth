@@ -1633,3 +1633,880 @@ function OrganizationRegistration({ token, onSuccess }) {
 }
 
 export default App;
+
+// Post Job Component
+function PostJobView({ token, setCurrentView }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    requirements: '',
+    job_type: '',
+    job_category: '',
+    location_type: '',
+    location: '',
+    salary_range: '',
+    skills_required: '',
+    experience_level: '',
+    benefits: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const jobData = {
+        ...formData,
+        requirements: formData.requirements.split('\n').filter(req => req.trim()),
+        skills_required: formData.skills_required.split(',').map(skill => skill.trim()).filter(skill => skill)
+      };
+
+      const response = await fetch(`${API_URL}/api/jobs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(jobData)
+      });
+
+      if (response.ok) {
+        setMessage('Job posted successfully!');
+        setTimeout(() => setCurrentView('jobs'), 2000);
+      } else {
+        const error = await response.json();
+        setMessage(error.detail || 'Failed to post job');
+      }
+    } catch (error) {
+      setMessage('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">📝 Post New Job</h2>
+      
+      {message && (
+        <div className={`p-4 rounded-lg mb-4 ${message.includes('success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          {message}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Job Title</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Job Category</label>
+            <select
+              name="job_category"
+              value={formData.job_category}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Category</option>
+              <option value="technology">Technology</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="education">Education</option>
+              <option value="finance">Finance</option>
+              <option value="marketing">Marketing</option>
+              <option value="design">Design</option>
+              <option value="agriculture">Agriculture</option>
+              <option value="environment">Environment</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Job Type</label>
+            <select
+              name="job_type"
+              value={formData.job_type}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Type</option>
+              <option value="full_time">Full Time</option>
+              <option value="part_time">Part Time</option>
+              <option value="contract">Contract</option>
+              <option value="internship">Internship</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Location Type</label>
+            <select
+              name="location_type"
+              value={formData.location_type}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Location Type</option>
+              <option value="remote">Remote</option>
+              <option value="hybrid">Hybrid</option>
+              <option value="on_site">On-site</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+            <input
+              type="text"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              placeholder="City, Country or 'Remote'"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Experience Level</label>
+            <select
+              name="experience_level"
+              value={formData.experience_level}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Experience Level</option>
+              <option value="Entry-level">Entry-level</option>
+              <option value="Mid-level">Mid-level</option>
+              <option value="Senior-level">Senior-level</option>
+              <option value="Executive">Executive</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Job Description</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows="4"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Requirements (one per line)</label>
+          <textarea
+            name="requirements"
+            value={formData.requirements}
+            onChange={handleChange}
+            rows="4"
+            placeholder="Bachelor's degree in relevant field&#10;2+ years of experience&#10;Excellent communication skills"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Skills Required (comma-separated)</label>
+            <input
+              type="text"
+              name="skills_required"
+              value={formData.skills_required}
+              onChange={handleChange}
+              placeholder="JavaScript, Python, Communication"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Salary Range</label>
+            <input
+              type="text"
+              name="salary_range"
+              value={formData.salary_range}
+              onChange={handleChange}
+              placeholder="$50,000 - $70,000"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Benefits</label>
+          <textarea
+            name="benefits"
+            value={formData.benefits}
+            onChange={handleChange}
+            rows="3"
+            placeholder="Health insurance, flexible working hours, professional development opportunities"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        <div className="flex space-x-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Posting...' : 'Post Job'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentView('organization')}
+            className="bg-gray-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// Projects/Crowdfunding with Full CRUD
+function ProjectsView({ token, user, setCurrentView }) {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/projects`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data.projects || []);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const contributeToProject = async (projectId, amount) => {
+    try {
+      const response = await fetch(`${API_URL}/api/contributions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          project_id: projectId,
+          amount: amount,
+          payment_method: 'online'
+        })
+      });
+
+      if (response.ok) {
+        // Refresh projects to get updated funding amounts
+        fetchProjects();
+      }
+    } catch (error) {
+      console.error('Error contributing to project:', error);
+    }
+  };
+
+  const filteredProjects = projects.filter(project => {
+    const matchesTitle = project.title.toLowerCase().includes(filter.toLowerCase());
+    const matchesCategory = categoryFilter === '' || project.category === categoryFilter;
+    return matchesTitle && matchesCategory;
+  });
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading impactful projects...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-8 text-white">
+        <h1 className="text-4xl font-bold mb-4">🌱 AfriFund DAO</h1>
+        <p className="text-xl mb-6">
+          Fund impactful projects across Africa. Support innovation, education, environment, and community development led by African youth.
+        </p>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => setCurrentView('create-project')}
+            className="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors"
+          >
+            Create Project
+          </button>
+          <button
+            onClick={() => setCurrentView('my-projects')}
+            className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-green-600 transition-colors"
+          >
+            My Projects
+          </button>
+          <button
+            onClick={() => setCurrentView('my-contributions')}
+            className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-green-600 transition-colors"
+          >
+            My Contributions
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-md p-6">
+        {/* Filters */}
+        <div className="mb-6 flex space-x-4">
+          <input
+            type="text"
+            placeholder="Search projects..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          >
+            <option value="">All Categories</option>
+            <option value="education">Education</option>
+            <option value="environment">Environment</option>
+            <option value="technology">Technology</option>
+            <option value="healthcare">Healthcare</option>
+            <option value="agriculture">Agriculture</option>
+            <option value="community">Community</option>
+            <option value="arts">Arts & Culture</option>
+          </select>
+        </div>
+
+        {/* Project Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProjects.map(project => (
+            <ProjectCard key={project.project_id} project={project} onContribute={contributeToProject} />
+          ))}
+        </div>
+
+        {filteredProjects.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🌱</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No projects found</h3>
+            <p className="text-gray-600">Try adjusting your search filters or be the first to create a project!</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProjectCard({ project, onContribute }) {
+  const [showContributeForm, setShowContributeForm] = useState(false);
+  const [amount, setAmount] = useState('');
+
+  const handleContribute = () => {
+    if (amount && parseFloat(amount) > 0) {
+      onContribute(project.project_id, parseFloat(amount));
+      setShowContributeForm(false);
+      setAmount('');
+    }
+  };
+
+  const progressPercentage = project.funding_goal > 0 
+    ? Math.min((project.current_funding / project.funding_goal) * 100, 100)
+    : 0;
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">{project.title}</h3>
+          <p className="text-sm text-gray-600 mb-2">by {project.creator_name}</p>
+          <span className="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+            {project.category}
+          </span>
+        </div>
+      </div>
+
+      <p className="text-gray-700 mb-4 text-sm line-clamp-3">{project.description}</p>
+
+      {/* Funding Progress */}
+      <div className="mb-4">
+        <div className="flex justify-between text-sm text-gray-600 mb-2">
+          <span>${project.current_funding.toLocaleString()} raised</span>
+          <span>Goal: ${project.funding_goal.toLocaleString()}</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-green-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${progressPercentage}%` }}
+          ></div>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">{progressPercentage.toFixed(1)}% funded</p>
+      </div>
+
+      {!showContributeForm ? (
+        <button
+          onClick={() => setShowContributeForm(true)}
+          className="w-full bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition-colors"
+        >
+          Contribute Now
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <input
+            type="number"
+            placeholder="Amount ($)"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            min="1"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+          <div className="flex space-x-2">
+            <button
+              onClick={handleContribute}
+              className="flex-1 bg-green-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-600 transition-colors"
+            >
+              Contribute
+            </button>
+            <button
+              onClick={() => setShowContributeForm(false)}
+              className="flex-1 bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-400 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Create Project Component
+function CreateProjectView({ token, setCurrentView }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    funding_goal: '',
+    timeline: '',
+    impact_goals: '',
+    required_resources: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const projectData = {
+        ...formData,
+        funding_goal: parseFloat(formData.funding_goal),
+        impact_goals: formData.impact_goals.split('\n').filter(goal => goal.trim()),
+        required_resources: formData.required_resources.split('\n').filter(resource => resource.trim())
+      };
+
+      const response = await fetch(`${API_URL}/api/projects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(projectData)
+      });
+
+      if (response.ok) {
+        setMessage('Project created successfully!');
+        setTimeout(() => setCurrentView('funding'), 2000);
+      } else {
+        const error = await response.json();
+        setMessage(error.detail || 'Failed to create project');
+      }
+    } catch (error) {
+      setMessage('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">🚀 Create Impact Project</h2>
+      
+      {message && (
+        <div className={`p-4 rounded-lg mb-4 ${message.includes('success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          {message}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Project Title</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Category</option>
+              <option value="education">Education</option>
+              <option value="environment">Environment</option>
+              <option value="technology">Technology</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="agriculture">Agriculture</option>
+              <option value="community">Community</option>
+              <option value="arts">Arts & Culture</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Funding Goal ($)</label>
+            <input
+              type="number"
+              name="funding_goal"
+              value={formData.funding_goal}
+              onChange={handleChange}
+              min="100"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Timeline</label>
+            <input
+              type="text"
+              name="timeline"
+              value={formData.timeline}
+              onChange={handleChange}
+              placeholder="e.g., 6 months"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              required
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Project Description</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows="4"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Impact Goals (one per line)</label>
+          <textarea
+            name="impact_goals"
+            value={formData.impact_goals}
+            onChange={handleChange}
+            rows="4"
+            placeholder="Educate 500 youth in digital skills&#10;Create 50 sustainable jobs&#10;Reduce carbon footprint by 20%"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Required Resources (one per line)</label>
+          <textarea
+            name="required_resources"
+            value={formData.required_resources}
+            onChange={handleChange}
+            rows="4"
+            placeholder="Laptops and equipment&#10;Training materials&#10;Venue rental&#10;Expert facilitators"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+
+        <div className="flex space-x-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-green-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-600 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Creating...' : 'Create Project'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentView('funding')}
+            className="bg-gray-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// My Projects Component
+function MyProjectsView({ token, setCurrentView }) {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMyProjects();
+  }, []);
+
+  const fetchMyProjects = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/projects/my`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data.projects || []);
+      }
+    } catch (error) {
+      console.error('Error fetching my projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteProject = async (projectId) => {
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      try {
+        const response = await fetch(`${API_URL}/api/projects/${projectId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          setProjects(projects.filter(project => project.project_id !== projectId));
+        }
+      } catch (error) {
+        console.error('Error deleting project:', error);
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your projects...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">🚀 My Projects</h2>
+        <button
+          onClick={() => setCurrentView('create-project')}
+          className="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+        >
+          Create New Project
+        </button>
+      </div>
+
+      {projects.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🚀</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No projects yet</h3>
+          <p className="text-gray-600">Create your first impact project to start making a difference!</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {projects.map(project => (
+            <div key={project.project_id} className="border border-gray-200 rounded-lg p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">{project.title}</h3>
+                  <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                    {project.category}
+                  </span>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => deleteProject(project.project_id)}
+                    className="text-red-600 hover:text-red-800 text-sm"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-gray-700 mb-4">{project.description}</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="font-medium text-gray-800">Funding Goal:</span>
+                  <p className="text-gray-600">${project.funding_goal.toLocaleString()}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-800">Current Funding:</span>
+                  <p className="text-gray-600">${project.current_funding.toLocaleString()}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-800">Timeline:</span>
+                  <p className="text-gray-600">{project.timeline}</p>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span>${project.current_funding.toLocaleString()} raised</span>
+                  <span>{((project.current_funding / project.funding_goal) * 100).toFixed(1)}% funded</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min((project.current_funding / project.funding_goal) * 100, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// My Contributions Component
+function MyContributionsView({ token }) {
+  const [contributions, setContributions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMyContributions();
+  }, []);
+
+  const fetchMyContributions = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/contributions/my`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setContributions(data.contributions || []);
+      }
+    } catch (error) {
+      console.error('Error fetching contributions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your contributions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalContributed = contributions.reduce((sum, contribution) => sum + contribution.amount, 0);
+
+  return (
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">💝 My Contributions</h2>
+
+      <div className="bg-green-50 rounded-lg p-4 mb-6">
+        <h3 className="text-lg font-semibold text-green-800 mb-2">Total Impact</h3>
+        <p className="text-2xl font-bold text-green-600">${totalContributed.toLocaleString()}</p>
+        <p className="text-green-700">contributed to {contributions.length} projects</p>
+      </div>
+
+      {contributions.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">💝</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No contributions yet</h3>
+          <p className="text-gray-600">Start contributing to impactful projects to see your impact here!</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {contributions.map(contribution => (
+            <div key={contribution.contribution_id} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="font-semibold text-gray-800">{contribution.project_title}</h3>
+                  <p className="text-sm text-gray-600">Contributed ${contribution.amount.toLocaleString()}</p>
+                  <p className="text-sm text-gray-500">on {new Date(contribution.created_at).toLocaleDateString()}</p>
+                </div>
+                <span className="text-2xl">💚</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
