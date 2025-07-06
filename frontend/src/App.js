@@ -76,6 +76,138 @@ function App() {
   );
 }
 
+function MyCoursesView({ token, setCurrentView }) {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMyCourses();
+  }, []);
+
+  const fetchMyCourses = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/courses/my-courses`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(data.courses);
+      }
+    } catch (error) {
+      console.error('Error fetching my courses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'active': 'bg-blue-100 text-blue-800',
+      'completed': 'bg-green-100 text-green-800',
+      'dropped': 'bg-red-100 text-red-800'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">📚 My Learning Journey</h2>
+          <button
+            onClick={() => setCurrentView('education')}
+            className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+          >
+            Browse More Courses
+          </button>
+        </div>
+        
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading your courses...</p>
+          </div>
+        ) : courses.length > 0 ? (
+          <div className="space-y-6">
+            {courses.map((course) => (
+              <div key={course.course_id} className="border border-gray-200 rounded-lg p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{course.title}</h3>
+                    <p className="text-gray-600 mb-2">by {course.instructor_name}</p>
+                    <div className="flex items-center space-x-4 mb-2">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(course.enrollment_status)}`}>
+                        {course.enrollment_status.toUpperCase()}
+                      </span>
+                      <span className="text-gray-600 text-sm">{course.category}</span>
+                      <span className="text-gray-600 text-sm">{course.level}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 md:mt-0 text-right">
+                    <div className="text-2xl font-bold text-blue-600">{course.progress_percentage}%</div>
+                    <p className="text-sm text-gray-600">Progress</p>
+                  </div>
+                </div>
+                
+                {/* Progress Bar */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-600">Course Progress</span>
+                    <span className="font-semibold">{Math.round(course.progress_percentage)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className="bg-blue-500 h-3 rounded-full" 
+                      style={{width: `${Math.min(course.progress_percentage, 100)}%`}}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-600">Duration</p>
+                    <p className="font-semibold">{course.duration_hours}h</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Enrolled</p>
+                    <p className="font-semibold">{new Date(course.enrolled_at).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Last Accessed</p>
+                    <p className="font-semibold">
+                      {course.last_accessed ? new Date(course.last_accessed).toLocaleDateString() : 'Never'}
+                    </p>
+                  </div>
+                  <div>
+                    <button className="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors w-full">
+                      Continue Learning
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📚</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No Courses Yet</h3>
+            <p className="text-gray-600 mb-6">Start your learning journey by enrolling in courses that interest you.</p>
+            <button
+              onClick={() => setCurrentView('education')}
+              className="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+            >
+              Browse Courses
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function EducationView({ token, user, setCurrentView }) {
   const [courses, setCourses] = useState([]);
   const [featuredCourses, setFeaturedCourses] = useState([]);
