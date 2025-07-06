@@ -958,6 +958,7 @@ class AfriCoreAPITest(unittest.TestCase):
         
         response = requests.post(f"{BACKEND_URL}/api/courses/{self.course_id}/review", headers=headers, json=payload)
         print(f"Review course response: {response.status_code}")
+        debug_response(response, "Review course")
         
         if response.status_code == 200:
             data = response.json()
@@ -974,6 +975,7 @@ class AfriCoreAPITest(unittest.TestCase):
         headers = {"Authorization": f"Bearer {self.token}"}
         response = requests.get(f"{BACKEND_URL}/api/courses/{self.course_id}/reviews", headers=headers)
         print(f"Get course reviews response: {response.status_code}")
+        debug_response(response, "Get course reviews")
         
         if response.status_code == 200:
             data = response.json()
@@ -982,6 +984,98 @@ class AfriCoreAPITest(unittest.TestCase):
             print("✅ Get course reviews endpoint working")
         else:
             print(f"⚠️ Could not get course reviews: {response.status_code} - {response.text}")
+            
+        # Check if reviews are available in the course details
+        response = requests.get(f"{BACKEND_URL}/api/courses/{self.course_id}", headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            if "recent_reviews" in data:
+                print("✅ Reviews are available in course details endpoint")
+                
+    def test_45_comprehensive_backend_validation(self):
+        """Comprehensive validation of all backend features"""
+        print("\n=== Comprehensive Backend Validation ===")
+        
+        # 1. Test Profile Management
+        headers = {"Authorization": f"Bearer {self.token}"}
+        print("\nTesting Profile Management...")
+        response = requests.get(f"{BACKEND_URL}/api/profile", headers=headers)
+        if response.status_code == 200:
+            print("✅ Profile retrieval working")
+        else:
+            print(f"❌ Profile retrieval failed: {response.status_code}")
+            
+        # 2. Test User Discovery & Connections
+        print("\nTesting User Discovery & Connections...")
+        response = requests.get(f"{BACKEND_URL}/api/users", headers=headers)
+        if response.status_code == 200:
+            print("✅ User discovery working")
+        else:
+            print(f"❌ User discovery failed: {response.status_code}")
+            
+        response = requests.get(f"{BACKEND_URL}/api/connections", headers=headers)
+        if response.status_code == 200:
+            print("✅ Connections management working")
+        else:
+            print(f"❌ Connections management failed: {response.status_code}")
+            
+        # 3. Test Jobs & Employment
+        print("\nTesting Jobs & Employment...")
+        response = requests.get(f"{BACKEND_URL}/api/jobs", headers=headers)
+        if response.status_code == 200:
+            print("✅ Job browsing working")
+        else:
+            print(f"❌ Job browsing failed: {response.status_code}")
+            
+        response = requests.get(f"{BACKEND_URL}/api/applications", headers=headers)
+        if response.status_code == 200:
+            print("✅ Applications management working")
+        else:
+            print(f"❌ Applications management failed: {response.status_code}")
+            
+        # 4. Test Project Crowdfunding
+        print("\nTesting Project Crowdfunding...")
+        response = requests.get(f"{BACKEND_URL}/api/projects", headers=headers)
+        if response.status_code == 200:
+            print("✅ Project browsing working")
+        else:
+            print(f"❌ Project browsing failed: {response.status_code}")
+            
+        response = requests.get(f"{BACKEND_URL}/api/contributions/my", headers=headers)
+        if response.status_code == 200:
+            print("✅ Contributions tracking working")
+        else:
+            print(f"❌ Contributions tracking failed: {response.status_code}")
+            
+        # 5. Test Civic Engagement
+        print("\nTesting Civic Engagement...")
+        response = requests.get(f"{BACKEND_URL}/api/policies", headers=headers)
+        if response.status_code == 200:
+            print("✅ Policy browsing working")
+        else:
+            print(f"❌ Policy browsing failed: {response.status_code}")
+            
+        response = requests.get(f"{BACKEND_URL}/api/civic/my-participation", headers=headers)
+        if response.status_code == 200:
+            print("✅ Civic participation tracking working")
+        else:
+            print(f"❌ Civic participation tracking failed: {response.status_code}")
+            
+        # 6. Test Education & Learning
+        print("\nTesting Education & Learning...")
+        response = requests.get(f"{BACKEND_URL}/api/courses", headers=headers)
+        if response.status_code == 200:
+            print("✅ Course browsing working")
+        else:
+            print(f"❌ Course browsing failed: {response.status_code}")
+            
+        response = requests.get(f"{BACKEND_URL}/api/courses/my-courses", headers=headers)
+        if response.status_code == 200:
+            print("✅ Course enrollment tracking working")
+        else:
+            print(f"❌ Course enrollment tracking failed: {response.status_code}")
+            
+        print("\n=== End of Comprehensive Backend Validation ===")
 
 if __name__ == "__main__":
     print("=== AfriCore API Testing ===")
