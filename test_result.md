@@ -198,15 +198,18 @@ frontend:
 
   - task: "AfriCore Authentication & UI"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Beautiful African-inspired login screen working perfectly"
+      - working: false
+        agent: "testing"
+        comment: "Authentication is not working. Login attempts return 401 Unauthorized and registration attempts return 422 Unprocessable Entity. The login UI is displayed correctly, but functionality is broken."
 
   - task: "Profile Management Frontend"
     implemented: true
