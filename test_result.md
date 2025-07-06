@@ -225,15 +225,18 @@ frontend:
 
   - task: "User Discovery & Connections Frontend"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "User discovery, search/filter, connections management fully implemented"
+      - working: false
+        agent: "testing"
+        comment: "User discovery functionality cannot be tested due to authentication issues. Additionally, backend logs show 500 Internal Server Error for /api/connections endpoint."
 
   - task: "Jobs & Employment Frontend"
     implemented: true
