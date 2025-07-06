@@ -73,6 +73,217 @@ function App() {
   );
 }
 
+// Education/Courses with Full CRUD
+function CoursesView({ token, user, setCurrentView }) {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/courses`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(data.courses || []);
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const enrollInCourse = async (courseId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/courses/${courseId}/enroll`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({})
+      });
+
+      if (response.ok) {
+        // Update course enrollment status
+        setCourses(courses.map(course => 
+          course.course_id === courseId 
+            ? { ...course, is_enrolled: true }
+            : course
+        ));
+      }
+    } catch (error) {
+      console.error('Error enrolling in course:', error);
+    }
+  };
+
+  const filteredCourses = courses.filter(course => {
+    const matchesTitle = course.title.toLowerCase().includes(filter.toLowerCase());
+    const matchesCategory = categoryFilter === '' || course.category === categoryFilter;
+    return matchesTitle && matchesCategory;
+  });
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading learning opportunities...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-8 text-white">
+        <h1 className="text-4xl font-bold mb-4">📚 EduNations</h1>
+        <p className="text-xl mb-6">
+          Unlock your potential with world-class education. Learn skills, earn credentials, and advance your career across Africa.
+        </p>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => setCurrentView('create-course')}
+            className="bg-white text-indigo-600 px-6 py-3 rounded-lg font-semibold hover:bg-indigo-50 transition-colors"
+          >
+            Create Course
+          </button>
+          <button
+            onClick={() => setCurrentView('my-courses')}
+            className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-indigo-600 transition-colors"
+          >
+            My Courses
+          </button>
+          <button
+            onClick={() => setCurrentView('mentorship')}
+            className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-indigo-600 transition-colors"
+          >
+            Mentorship
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-md p-6">
+        {/* Filters */}
+        <div className="mb-6 flex space-x-4">
+          <input
+            type="text"
+            placeholder="Search courses..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          >
+            <option value="">All Categories</option>
+            <option value="technology">Technology</option>
+            <option value="business">Business</option>
+            <option value="design">Design</option>
+            <option value="marketing">Marketing</option>
+            <option value="finance">Finance</option>
+            <option value="healthcare">Healthcare</option>
+            <option value="education">Education</option>
+            <option value="agriculture">Agriculture</option>
+            <option value="environment">Environment</option>
+          </select>
+        </div>
+
+        {/* Course Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredCourses.map(course => (
+            <CourseCard key={course.course_id} course={course} onEnroll={enrollInCourse} />
+          ))}
+        </div>
+
+        {filteredCourses.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📚</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No courses found</h3>
+            <p className="text-gray-600">Try adjusting your search filters or be the first to create a course!</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CourseCard({ course, onEnroll }) {
+  return (
+    <div className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">{course.title}</h3>
+          <p className="text-sm text-gray-600 mb-2">by {course.instructor_name}</p>
+          <span className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs">
+            {course.category}
+          </span>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-500">{course.duration}</p>
+          <p className="text-sm text-gray-500">{course.difficulty_level}</p>
+        </div>
+      </div>
+
+      <p className="text-gray-700 mb-4 text-sm line-clamp-3">{course.description}</p>
+
+      {course.skills_covered && course.skills_covered.length > 0 && (
+        <div className="mb-4">
+          <h4 className="font-medium text-gray-800 mb-2 text-sm">Skills You'll Learn:</h4>
+          <div className="flex flex-wrap gap-1">
+            {course.skills_covered.slice(0, 3).map((skill, index) => (
+              <span key={index} className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">
+                {skill}
+              </span>
+            ))}
+            {course.skills_covered.length > 3 && (
+              <span className="text-xs text-gray-500">+{course.skills_covered.length - 3} more</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-lg font-semibold text-indigo-600">
+            {course.price === 0 ? 'Free' : `$${course.price}`}
+          </p>
+          <p className="text-xs text-gray-500">{course.enrolled_count} students</p>
+        </div>
+        
+        {course.is_enrolled ? (
+          <button
+            disabled
+            className="bg-green-100 text-green-800 px-4 py-2 rounded-lg text-sm font-medium"
+          >
+            Enrolled ✓
+          </button>
+        ) : (
+          <button
+            onClick={() => onEnroll(course.course_id)}
+            className="bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-600 transition-colors"
+          >
+            Enroll Now
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Civic Engagement with Full CRUD
 function CivicEngagementView({ token, user, setCurrentView }) {
   const [policies, setPolicies] = useState([]);
