@@ -285,15 +285,18 @@ frontend:
 
   - task: "Education & Learning Frontend"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Course creation, enrollment, progress tracking fully implemented"
+      - working: false
+        agent: "testing"
+        comment: "Education & Learning functionality cannot be tested due to authentication issues. Additionally, backend logs show 404 Not Found for /api/enrollments, /api/courses/my-courses, and /api/courses/{course_id}/reviews endpoints, and 500 Internal Server Error for some course detail requests."
 
 metadata:
   created_by: "main_agent"
