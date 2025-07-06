@@ -9,6 +9,21 @@ from datetime import datetime
 # Get the backend URL from the frontend .env file
 BACKEND_URL = "https://631d4401-442b-4235-96d9-59ab05a2a184.preview.emergentagent.com"
 
+# Set to True to print detailed API responses for debugging
+DEBUG = False
+
+def debug_response(response, message="API Response"):
+    """Print detailed API response information if DEBUG is True"""
+    if DEBUG:
+        print(f"\n--- {message} ---")
+        print(f"Status Code: {response.status_code}")
+        print(f"Headers: {response.headers}")
+        try:
+            print(f"JSON Response: {json.dumps(response.json(), indent=2)}")
+        except:
+            print(f"Text Response: {response.text}")
+        print("-------------------\n")
+
 class AfriCoreAPITest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
