@@ -917,6 +917,7 @@ class AfriCoreAPITest(unittest.TestCase):
         headers = {"Authorization": f"Bearer {self.token}"}
         response = requests.get(f"{BACKEND_URL}/api/enrollments", headers=headers)
         print(f"Get enrollments response: {response.status_code}")
+        debug_response(response, "Get enrollments")
         
         if response.status_code == 200:
             data = response.json()
@@ -925,6 +926,19 @@ class AfriCoreAPITest(unittest.TestCase):
             print("✅ Get enrollments endpoint working")
         else:
             print(f"⚠️ Could not get enrollments: {response.status_code} - {response.text}")
+            
+        # Alternative endpoint: Try using /api/courses/my-courses instead
+        response = requests.get(f"{BACKEND_URL}/api/courses/my-courses", headers=headers)
+        print(f"Get my courses response: {response.status_code}")
+        debug_response(response, "Get my courses")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertIn("courses", data)
+            self.assertIsInstance(data["courses"], list)
+            print("✅ Get my courses endpoint working (alternative to enrollments)")
+        else:
+            print(f"⚠️ Could not get my courses: {response.status_code} - {response.text}")
         
     def test_43_review_course(self):
         """Test reviewing a course"""
