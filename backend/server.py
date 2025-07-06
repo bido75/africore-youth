@@ -229,7 +229,7 @@ class MentorshipStatus(str, Enum):
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
-# Pydantic models
+# Pydantic models with ObjectId handling
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
@@ -237,9 +237,17 @@ class UserRegister(BaseModel):
     country: str
     age: int
 
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
 
 class UserProfile(BaseModel):
     full_name: str
@@ -257,6 +265,10 @@ class UserProfile(BaseModel):
     work_experience: Optional[str] = ""
     portfolio_url: Optional[str] = ""
     availability: Optional[str] = ""
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
 
 class OrganizationProfile(BaseModel):
     name: str
