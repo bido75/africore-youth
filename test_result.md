@@ -312,7 +312,9 @@ test_plan:
     - "Backend API Testing - Verify all endpoints working with frontend"
     - "Full feature integration testing"
     - "User workflow testing"
-  stuck_tasks: []
+    - "Fix authentication issues"
+  stuck_tasks:
+    - "Authentication & User Management"
   test_all: true
   test_priority: "integration_testing"
 
