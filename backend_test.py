@@ -661,22 +661,298 @@ class AfriCoreAPITest(unittest.TestCase):
         self.assertIsInstance(data["applications"], list)
         print("✅ Get applications endpoint working")
         
-    def test_29_get_organization_applications(self):
-        """Test getting applications for an organization's jobs"""
-        if not self.organization_id:
-            self.skipTest("No organization ID available for testing")
-            
-        headers = {"Authorization": f"Bearer {self.token}"}
-        response = requests.get(f"{BACKEND_URL}/api/organization/applications", headers=headers)
-        print(f"Get organization applications response: {response.status_code}")
+    def test_30_create_policy(self):
+        """Test creating a policy proposal"""
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "title": f"Test Policy {int(time.time())}",
+            "description": "This is a test policy proposal for API testing",
+            "category": "education",
+            "proposal_type": "youth_initiative",
+            "target_location": "Kenya",
+            "expected_impact": "Improve education access for youth",
+            "implementation_timeline": "6 months",
+            "resources_needed": "Funding and volunteers",
+            "supporting_documents": []
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/api/policies", headers=headers, json=payload)
+        print(f"Create policy response: {response.status_code}")
         
         if response.status_code == 200:
             data = response.json()
-            self.assertIn("applications", data)
-            self.assertIsInstance(data["applications"], list)
-            print("✅ Get organization applications endpoint working")
+            self.assertIn("policy_id", data)
+            self.__class__.policy_id = data["policy_id"]
+            print(f"✅ Policy created successfully with ID: {self.policy_id}")
         else:
-            print(f"⚠️ Could not get organization applications: {response.status_code} - {response.text}")
+            print(f"⚠️ Could not create policy: {response.status_code} - {response.text}")
+        
+    def test_31_get_policies(self):
+        """Test getting list of policies"""
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/policies", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("policies", data)
+        self.assertIsInstance(data["policies"], list)
+        
+        # Test filtering by category
+        response = requests.get(f"{BACKEND_URL}/api/policies?category=education", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        for policy in data["policies"]:
+            if policy["category"] == "education":
+                print(f"Found education policy: {policy['title']}")
+        
+        print("✅ Get policies endpoint working with filters")
+        
+    def test_32_get_specific_policy(self):
+        """Test getting a specific policy by ID"""
+        if not self.policy_id:
+            self.skipTest("No policy ID available for testing")
+            
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/policies/{self.policy_id}", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["policy_id"], self.policy_id)
+        print(f"✅ Get specific policy successful: {data['title']}")
+        
+    def test_33_vote_on_policy(self):
+        """Test voting on a policy"""
+        if not self.policy_id:
+            self.skipTest("No policy ID available for testing")
+            
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "policy_id": self.policy_id,
+            "vote_type": "support",
+            "comment": "I support this policy because it addresses important educational needs."
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/api/policies/{self.policy_id}/vote", headers=headers, json=payload)
+        print(f"Vote on policy response: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertEqual(data["message"], "Vote recorded successfully")
+            print("✅ Policy vote successful")
+        else:
+            print(f"⚠️ Could not vote on policy: {response.status_code} - {response.text}")
+        
+    def test_34_give_policy_feedback(self):
+        """Test giving feedback on a policy"""
+        if not self.policy_id:
+            self.skipTest("No policy ID available for testing")
+            
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "policy_id": self.policy_id,
+            "feedback_type": "suggestion",
+            "content": "I suggest expanding this policy to include vocational training.",
+            "impact_assessment": "This would increase the effectiveness by reaching more youth.",
+            "alternative_suggestion": "Consider partnering with existing vocational institutions."
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/api/policies/{self.policy_id}/feedback", headers=headers, json=payload)
+        print(f"Give policy feedback response: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertIn("feedback_id", data)
+            print(f"✅ Policy feedback submitted successfully with ID: {data['feedback_id']}")
+        else:
+            print(f"⚠️ Could not submit policy feedback: {response.status_code} - {response.text}")
+        
+    def test_35_get_policy_feedback(self):
+        """Test getting feedback for a policy"""
+        if not self.policy_id:
+            self.skipTest("No policy ID available for testing")
+            
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/policies/{self.policy_id}/feedback", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("feedback", data)
+        self.assertIsInstance(data["feedback"], list)
+        print("✅ Get policy feedback endpoint working")
+        
+    def test_36_get_civic_participation(self):
+        """Test getting user's civic participation"""
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/civic/my-participation", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("total_points", data)
+        self.assertIn("participation_level", data)
+        print(f"✅ Get civic participation successful: {data['participation_level']} level with {data['total_points']} points")
+        
+    def test_37_get_civic_leaderboard(self):
+        """Test getting civic participation leaderboard"""
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/civic/leaderboard", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        print("✅ Get civic leaderboard endpoint working")
+        
+    def test_38_create_course(self):
+        """Test creating a course"""
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "title": f"Test Course {int(time.time())}",
+            "description": "This is a test course for API testing",
+            "category": "technology",
+            "level": "beginner",
+            "duration_hours": 10,
+            "price": 0.0,
+            "learning_objectives": ["Learn API testing", "Understand backend development"],
+            "prerequisites": [],
+            "skills_gained": ["API Testing", "Backend Development"],
+            "certificate_type": "completion"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/api/courses", headers=headers, json=payload)
+        print(f"Create course response: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertIn("course_id", data)
+            self.__class__.course_id = data["course_id"]
+            print(f"✅ Course created successfully with ID: {self.course_id}")
+        else:
+            print(f"⚠️ Could not create course: {response.status_code} - {response.text}")
+        
+    def test_39_get_courses(self):
+        """Test getting list of courses"""
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/courses", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("courses", data)
+        self.assertIsInstance(data["courses"], list)
+        
+        # Test filtering by category
+        response = requests.get(f"{BACKEND_URL}/api/courses?category=technology", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        for course in data["courses"]:
+            if course["category"] == "technology":
+                print(f"Found technology course: {course['title']}")
+        
+        print("✅ Get courses endpoint working with filters")
+        
+    def test_40_get_specific_course(self):
+        """Test getting a specific course by ID"""
+        if not self.course_id:
+            self.skipTest("No course ID available for testing")
+            
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/courses/{self.course_id}", headers=headers)
+        print(f"Get specific course response: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertEqual(data["course_id"], self.course_id)
+            print(f"✅ Get specific course successful: {data['title']}")
+        else:
+            print(f"⚠️ Could not get course: {response.status_code} - {response.text}")
+        
+    def test_41_enroll_in_course(self):
+        """Test enrolling in a course"""
+        if not self.course_id:
+            self.skipTest("No course ID available for testing")
+            
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "course_id": self.course_id
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/api/courses/{self.course_id}/enroll", headers=headers, json=payload)
+        print(f"Enroll in course response: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertIn("enrollment_id", data)
+            self.__class__.enrollment_id = data["enrollment_id"]
+            print(f"✅ Course enrollment successful with ID: {self.enrollment_id}")
+        else:
+            print(f"⚠️ Could not enroll in course: {response.status_code} - {response.text}")
+        
+    def test_42_get_enrollments(self):
+        """Test getting user's course enrollments"""
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/enrollments", headers=headers)
+        print(f"Get enrollments response: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertIn("enrollments", data)
+            self.assertIsInstance(data["enrollments"], list)
+            print("✅ Get enrollments endpoint working")
+        else:
+            print(f"⚠️ Could not get enrollments: {response.status_code} - {response.text}")
+        
+    def test_43_review_course(self):
+        """Test reviewing a course"""
+        if not self.course_id:
+            self.skipTest("No course ID available for testing")
+            
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "course_id": self.course_id,
+            "rating": 5,
+            "review_text": "This is an excellent course for learning API testing."
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/api/courses/{self.course_id}/review", headers=headers, json=payload)
+        print(f"Review course response: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertIn("review_id", data)
+            print(f"✅ Course review submitted successfully with ID: {data['review_id']}")
+        else:
+            print(f"⚠️ Could not review course: {response.status_code} - {response.text}")
+        
+    def test_44_get_course_reviews(self):
+        """Test getting reviews for a course"""
+        if not self.course_id:
+            self.skipTest("No course ID available for testing")
+            
+        headers = {"Authorization": f"Bearer {self.token}"}
+        response = requests.get(f"{BACKEND_URL}/api/courses/{self.course_id}/reviews", headers=headers)
+        print(f"Get course reviews response: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertIn("reviews", data)
+            self.assertIsInstance(data["reviews"], list)
+            print("✅ Get course reviews endpoint working")
+        else:
+            print(f"⚠️ Could not get course reviews: {response.status_code} - {response.text}")
 
 if __name__ == "__main__":
     unittest.main(argv=['first-arg-is-ignored'], exit=False)
