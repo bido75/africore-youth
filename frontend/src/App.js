@@ -54,30 +54,28 @@ function App() {
         {currentView === 'discover' && <DiscoverView token={token} setCurrentView={setCurrentView} />}
         {currentView === 'connections' && <ConnectionsView token={token} />}
         {currentView === 'jobs' && <JobsView token={token} user={user} setCurrentView={setCurrentView} />}
-        {currentView === 'my-applications' && <MyApplicationsView token={token} />}
-        {currentView === 'organization' && <OrganizationView token={token} user={user} setCurrentView={setCurrentView} />}
         {currentView === 'post-job' && <PostJobView token={token} setCurrentView={setCurrentView} />}
-        {currentView === 'manage-applications' && <ManageApplicationsView token={token} />}
-        {currentView === 'funding' && <FundingView token={token} user={user} setCurrentView={setCurrentView} />}
+        {currentView === 'my-applications' && <MyApplicationsView token={token} />}
+        {currentView === 'organization' && <OrganizationDashboard token={token} user={user} setCurrentView={setCurrentView} />}
+        {currentView === 'funding' && <ProjectsView token={token} user={user} setCurrentView={setCurrentView} />}
         {currentView === 'my-projects' && <MyProjectsView token={token} setCurrentView={setCurrentView} />}
         {currentView === 'create-project' && <CreateProjectView token={token} setCurrentView={setCurrentView} />}
         {currentView === 'my-contributions' && <MyContributionsView token={token} />}
-        {currentView === 'civic' && <CivicView token={token} user={user} setCurrentView={setCurrentView} />}
-        {currentView === 'my-civic' && <MyCivicParticipationView token={token} setCurrentView={setCurrentView} />}
+        {currentView === 'civic' && <CivicEngagementView token={token} user={user} setCurrentView={setCurrentView} />}
         {currentView === 'create-policy' && <CreatePolicyView token={token} setCurrentView={setCurrentView} />}
-        {currentView === 'civic-forums' && <CivicForumsView token={token} setCurrentView={setCurrentView} />}
-        {currentView === 'education' && <EducationView token={token} user={user} setCurrentView={setCurrentView} />}
-        {currentView === 'my-courses' && <MyCoursesView token={token} setCurrentView={setCurrentView} />}
+        {currentView === 'my-civic-participation' && <MyCivicParticipationView token={token} />}
+        {currentView === 'education' && <CoursesView token={token} user={user} setCurrentView={setCurrentView} />}
         {currentView === 'create-course' && <CreateCourseView token={token} setCurrentView={setCurrentView} />}
-        {currentView === 'mentorship' && <MentorshipView token={token} setCurrentView={setCurrentView} />}
+        {currentView === 'my-courses' && <MyCoursesView token={token} />}
+        {currentView === 'mentorship' && <MentorshipView token={token} />}
       </main>
     </div>
   );
 }
 
+// Authentication Component
 function AuthScreen({ setToken, setUser }) {
   const [isLogin, setIsLogin] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -85,10 +83,13 @@ function AuthScreen({ setToken, setUser }) {
     country: '',
     age: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
       const endpoint = isLogin ? '/api/login' : '/api/register';
@@ -97,34 +98,20 @@ function AuthScreen({ setToken, setUser }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(isLogin ? 
-          { email: formData.email, password: formData.password } : 
-          { ...formData, age: parseInt(formData.age) }
-        ),
+        body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
+      
       if (response.ok) {
-        const data = await response.json();
         localStorage.setItem('token', data.access_token);
         setToken(data.access_token);
-        
-        // Fetch profile after login/register
-        const profileResponse = await fetch(`${API_URL}/api/profile`, {
-          headers: {
-            'Authorization': `Bearer ${data.access_token}`
-          }
-        });
-        if (profileResponse.ok) {
-          const profile = await profileResponse.json();
-          setUser(profile);
-        }
+        setUser(data.user);
       } else {
-        const error = await response.json();
-        alert(error.detail || 'Authentication failed');
+        setError(data.detail || 'Authentication failed');
       }
     } catch (error) {
-      console.error('Auth error:', error);
-      alert('Network error. Please try again.');
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -138,139 +125,178 @@ function AuthScreen({ setToken, setUser }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-400 via-yellow-400 to-orange-500 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl flex bg-white rounded-2xl shadow-2xl overflow-hidden">
-        {/* Left side - Hero */}
-        <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-orange-500 to-yellow-500 p-12 flex-col justify-center items-center text-white">
+    <div className="min-h-screen bg-gradient-to-br from-orange-100 to-yellow-100 flex items-center justify-center p-4">
+      <div className="flex bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl w-full">
+        {/* Left side - Branding */}
+        <div className="bg-gradient-to-br from-orange-500 to-yellow-500 p-12 flex flex-col justify-center w-1/2">
+          <h1 className="text-4xl font-bold text-white mb-4">Welcome to AfriCore</h1>
+          <p className="text-orange-100 text-lg mb-8">Pan-African Youth Development & Innovation Network</p>
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <img src="https://images.unsplash.com/photo-1589736184265-3c5c3dcfe3c0?w=200&h=150&fit=crop" alt="African youth" className="rounded-lg" />
+            <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200&h=150&fit=crop" alt="African innovation" className="rounded-lg" />
+          </div>
           <div className="text-center">
-            <h1 className="text-4xl font-bold mb-4">Welcome to AfriCore</h1>
-            <p className="text-xl mb-8">Pan-African Youth Development & Innovation Network</p>
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <img 
-                src="https://images.pexels.com/photos/11153505/pexels-photo-11153505.jpeg" 
-                alt="African youth collaboration" 
-                className="rounded-lg shadow-lg h-24 w-full object-cover"
-              />
-              <img 
-                src="https://images.unsplash.com/photo-1527203561188-dae1bc1a417f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDJ8MHwxfHNlYXJjaHwzfHxBZnJpY2FuJTIweW91dGh8ZW58MHx8fG9yYW5nZXwxNzUxNzU1MjQ5fDA&ixlib=rb-4.1.0&q=85" 
-                alt="African youth" 
-                className="rounded-lg shadow-lg h-24 w-full object-cover"
-              />
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-3">Connect • Collaborate • Create</h3>
-              <p className="text-sm">Join thousands of African youth building the future of our continent together</p>
-            </div>
+            <p className="text-white font-semibold text-lg">Connect • Collaborate • Create</p>
+            <p className="text-orange-100 mt-2">Join thousands of African youth building the future of our continent together.</p>
           </div>
         </div>
 
         {/* Right side - Form */}
-        <div className="w-full md:w-1/2 p-8">
-          <div className="max-w-md mx-auto">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">
-              {isLogin ? 'Welcome Back!' : 'Join AfriCore'}
-            </h2>
-            <p className="text-gray-600 mb-8">
-              {isLogin ? 'Sign in to your account' : 'Create your profile and connect with African youth'}
-            </p>
+        <div className="w-1/2 p-12">
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">
+            {isLogin ? 'Welcome Back!' : 'Join AfriCore'}
+          </h2>
+          <p className="text-gray-600 mb-8">
+            {isLogin ? 'Sign in to your account' : 'Create your profile and connect with African youth'}
+          </p>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="your@email.com"
-                />
-              </div>
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+              {error}
+            </div>
+          )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder="••••••••"
-                />
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="your@email.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                required
+              />
+            </div>
 
-              {!isLogin && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input
-                      type="text"
-                      name="full_name"
-                      value={formData.full_name}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="John Doe"
-                    />
-                  </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                required
+              />
+            </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                    <select
-                      name="country"
-                      value={formData.country}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    >
-                      <option value="">Select your country</option>
-                      <option value="Nigeria">Nigeria</option>
-                      <option value="Kenya">Kenya</option>
-                      <option value="Ghana">Ghana</option>
-                      <option value="South Africa">South Africa</option>
-                      <option value="Ethiopia">Ethiopia</option>
-                      <option value="Egypt">Egypt</option>
-                      <option value="Morocco">Morocco</option>
-                      <option value="Uganda">Uganda</option>
-                      <option value="Tanzania">Tanzania</option>
-                      <option value="Algeria">Algeria</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
+            {!isLogin && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    name="full_name"
+                    value={formData.full_name}
+                    onChange={handleChange}
+                    placeholder="John Doe"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
-                    <input
-                      type="number"
-                      name="age"
-                      value={formData.age}
-                      onChange={handleChange}
-                      required
-                      min="16"
-                      max="35"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="25"
-                    />
-                  </div>
-                </>
-              )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                  <select
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Select your country</option>
+                    <option value="Algeria">Algeria</option>
+                    <option value="Angola">Angola</option>
+                    <option value="Benin">Benin</option>
+                    <option value="Botswana">Botswana</option>
+                    <option value="Burkina Faso">Burkina Faso</option>
+                    <option value="Burundi">Burundi</option>
+                    <option value="Cameroon">Cameroon</option>
+                    <option value="Cape Verde">Cape Verde</option>
+                    <option value="Central African Republic">Central African Republic</option>
+                    <option value="Chad">Chad</option>
+                    <option value="Comoros">Comoros</option>
+                    <option value="Congo">Congo</option>
+                    <option value="Democratic Republic of Congo">Democratic Republic of Congo</option>
+                    <option value="Djibouti">Djibouti</option>
+                    <option value="Egypt">Egypt</option>
+                    <option value="Equatorial Guinea">Equatorial Guinea</option>
+                    <option value="Eritrea">Eritrea</option>
+                    <option value="Ethiopia">Ethiopia</option>
+                    <option value="Gabon">Gabon</option>
+                    <option value="Gambia">Gambia</option>
+                    <option value="Ghana">Ghana</option>
+                    <option value="Guinea">Guinea</option>
+                    <option value="Guinea-Bissau">Guinea-Bissau</option>
+                    <option value="Ivory Coast">Ivory Coast</option>
+                    <option value="Kenya">Kenya</option>
+                    <option value="Lesotho">Lesotho</option>
+                    <option value="Liberia">Liberia</option>
+                    <option value="Libya">Libya</option>
+                    <option value="Madagascar">Madagascar</option>
+                    <option value="Malawi">Malawi</option>
+                    <option value="Mali">Mali</option>
+                    <option value="Mauritania">Mauritania</option>
+                    <option value="Mauritius">Mauritius</option>
+                    <option value="Morocco">Morocco</option>
+                    <option value="Mozambique">Mozambique</option>
+                    <option value="Namibia">Namibia</option>
+                    <option value="Niger">Niger</option>
+                    <option value="Nigeria">Nigeria</option>
+                    <option value="Rwanda">Rwanda</option>
+                    <option value="Sao Tome and Principe">Sao Tome and Principe</option>
+                    <option value="Senegal">Senegal</option>
+                    <option value="Seychelles">Seychelles</option>
+                    <option value="Sierra Leone">Sierra Leone</option>
+                    <option value="Somalia">Somalia</option>
+                    <option value="South Africa">South Africa</option>
+                    <option value="South Sudan">South Sudan</option>
+                    <option value="Sudan">Sudan</option>
+                    <option value="Swaziland">Swaziland</option>
+                    <option value="Tanzania">Tanzania</option>
+                    <option value="Togo">Togo</option>
+                    <option value="Tunisia">Tunisia</option>
+                    <option value="Uganda">Uganda</option>
+                    <option value="Zambia">Zambia</option>
+                    <option value="Zimbabwe">Zimbabwe</option>
+                  </select>
+                </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-3 px-6 rounded-lg font-semibold hover:from-orange-600 hover:to-yellow-600 transform hover:scale-105 transition-all duration-200 disabled:opacity-50"
-              >
-                {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
-              </button>
-            </form>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
+                  <input
+                    type="number"
+                    name="age"
+                    value={formData.age}
+                    onChange={handleChange}
+                    placeholder="25"
+                    min="18"
+                    max="35"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </>
+            )}
 
-            <p className="text-center text-gray-600 mt-6">
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-orange-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
               <button
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-orange-500 hover:text-orange-600 font-medium"
+                className="text-orange-500 hover:text-orange-600 font-semibold"
               >
                 {isLogin ? 'Sign Up' : 'Sign In'}
               </button>
@@ -282,95 +308,91 @@ function AuthScreen({ setToken, setUser }) {
   );
 }
 
+// Header Component
 function Header({ user, logout, currentView, setCurrentView }) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   return (
-    <header className="bg-white shadow-lg border-b-4 border-orange-400">
+    <header className="bg-white shadow-sm">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="text-2xl font-bold text-orange-600">AfriCore</div>
-            <div className="hidden md:flex space-x-4">
+          <div className="flex items-center space-x-8">
+            <div className="flex items-center space-x-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">A</span>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-800">AfriCore</h1>
+            </div>
+            
+            <nav className="flex space-x-6">
               <button
                 onClick={() => setCurrentView('home')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'home' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:text-orange-600'
+                className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                  currentView === 'home' ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:text-orange-600'
                 }`}
               >
                 Home
               </button>
               <button
                 onClick={() => setCurrentView('discover')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'discover' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:text-orange-600'
+                className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                  currentView === 'discover' ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:text-orange-600'
                 }`}
               >
                 Discover
               </button>
               <button
                 onClick={() => setCurrentView('jobs')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'jobs' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-blue-600'
+                className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                  currentView === 'jobs' ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:text-orange-600'
                 }`}
               >
                 Jobs
               </button>
               <button
                 onClick={() => setCurrentView('funding')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'funding' ? 'bg-green-500 text-white' : 'text-gray-600 hover:text-green-600'
+                className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                  currentView === 'funding' ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:text-orange-600'
                 }`}
               >
                 Funding
               </button>
               <button
                 onClick={() => setCurrentView('civic')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'civic' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:text-purple-600'
+                className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                  currentView === 'civic' ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:text-orange-600'
                 }`}
               >
                 Civic
               </button>
               <button
                 onClick={() => setCurrentView('education')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'education' ? 'bg-blue-500 text-white' : 'text-gray-600 hover:text-blue-600'
+                className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                  currentView === 'education' ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:text-orange-600'
                 }`}
               >
                 Education
               </button>
-              <button
-                onClick={() => setCurrentView('connections')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'connections' ? 'bg-orange-500 text-white' : 'text-gray-600 hover:text-orange-600'
-                }`}
-              >
-                Connections
-              </button>
-              <button
-                onClick={() => setCurrentView('organization')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'organization' ? 'bg-green-500 text-white' : 'text-gray-600 hover:text-green-600'
-                }`}
-              >
-                Employer
-              </button>
-            </div>
+            </nav>
           </div>
+          
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => setCurrentView('profile')}
-              className="flex items-center space-x-2 bg-orange-100 hover:bg-orange-200 px-4 py-2 rounded-lg transition-colors"
+              onClick={() => setCurrentView('connections')}
+              className="p-2 text-gray-600 hover:text-orange-600 transition-colors"
             >
-              <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-yellow-400 rounded-full flex items-center justify-center text-white font-bold">
-                {user?.full_name?.charAt(0) || 'U'}
-              </div>
-              <span className="hidden md:block font-medium text-gray-700">{user?.full_name}</span>
+              <span className="text-lg">👥</span>
             </button>
+            <div className="relative">
+              <button
+                onClick={() => setCurrentView('profile')}
+                className="flex items-center space-x-2 p-2 text-gray-600 hover:text-orange-600 transition-colors"
+              >
+                <span className="text-lg">👤</span>
+                <span className="font-medium">{user?.full_name || 'Profile'}</span>
+              </button>
+            </div>
             <button
               onClick={logout}
-              className="text-gray-600 hover:text-red-600 font-medium"
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
             >
               Logout
             </button>
@@ -381,254 +403,746 @@ function Header({ user, logout, currentView, setCurrentView }) {
   );
 }
 
+// Home View
 function HomeView({ user, setCurrentView }) {
-  const [stats, setStats] = useState({
-    totalJobs: 0,
-    recommendedJobs: 0,
-    applications: 0
-  });
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      setStats({
-        totalJobs: 150,
-        recommendedJobs: 8,
-        applications: 3
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
-  };
-
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl p-8 text-white">
-        <div className="flex flex-col md:flex-row items-center justify-between">
-          <div className="md:w-2/3">
-            <h1 className="text-4xl font-bold mb-4">Welcome back, {user?.full_name}!</h1>
-            <p className="text-xl mb-6">
-              Connect with African youth across the continent and discover amazing opportunities. Build your network, learn new skills, fund projects, and engage in civic activities together.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <button
-                onClick={() => setCurrentView('jobs')}
-                className="bg-white text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors"
-              >
-                Find Jobs
-              </button>
-              <button
-                onClick={() => setCurrentView('funding')}
-                className="bg-white text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors"
-              >
-                Fund Projects
-              </button>
-              <button
-                onClick={() => setCurrentView('education')}
-                className="bg-white text-orange-600 px-6 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors"
-              >
-                Learn Skills
-              </button>
-              <button
-                onClick={() => setCurrentView('civic')}
-                className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-orange-600 transition-colors"
-              >
-                Civic Engagement
-              </button>
-            </div>
+    <div className="space-y-12">
+      {/* Hero Section */}
+      <div className="text-center">
+        <h1 className="text-5xl font-bold text-gray-800 mb-4">
+          Welcome to AfriCore, {user?.full_name}! 🌍
+        </h1>
+        <p className="text-xl text-gray-600 mb-8">
+          Your gateway to connecting with African youth, finding opportunities, and building the future of our continent.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="text-4xl mb-4">🤝</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Connect</h3>
+            <p className="text-gray-600 mb-4">Build meaningful relationships with fellow African youth across the continent.</p>
+            <button
+              onClick={() => setCurrentView('discover')}
+              className="bg-orange-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+            >
+              Start Connecting
+            </button>
           </div>
-          <div className="md:w-1/3 mt-6 md:mt-0">
-            <img 
-              src="https://images.pexels.com/photos/14973290/pexels-photo-14973290.jpeg" 
-              alt="African youth collaboration" 
-              className="rounded-lg shadow-lg w-full h-48 object-cover"
-            />
+          
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="text-4xl mb-4">💼</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Opportunities</h3>
+            <p className="text-gray-600 mb-4">Discover jobs, internships, and entrepreneurial opportunities designed for African youth.</p>
+            <button
+              onClick={() => setCurrentView('jobs')}
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+            >
+              Explore Jobs
+            </button>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="text-4xl mb-4">🌱</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Impact</h3>
+            <p className="text-gray-600 mb-4">Fund and support impactful projects that create positive change across Africa.</p>
+            <button
+              onClick={() => setCurrentView('funding')}
+              className="bg-green-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+            >
+              Make Impact
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Platform Features */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-orange-400 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-gray-600 font-medium">Youth Network</p>
-              <p className="text-2xl font-bold text-gray-800">{user?.country}</p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">🤝</span>
-            </div>
-          </div>
+      {/* Quick Actions */}
+      <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-8 text-white">
+        <h2 className="text-3xl font-bold mb-6 text-center">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <button
-            onClick={() => setCurrentView('discover')}
-            className="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition-colors"
+            onClick={() => setCurrentView('profile')}
+            className="bg-white bg-opacity-20 hover:bg-opacity-30 p-4 rounded-lg transition-colors"
           >
-            Connect
+            <div className="text-2xl mb-2">👤</div>
+            <div className="font-semibold">Update Profile</div>
           </button>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-blue-400 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-gray-600 font-medium">Jobs & Opportunities</p>
-              <p className="text-2xl font-bold text-gray-800">{stats.recommendedJobs}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">💼</span>
-            </div>
-          </div>
-          <button
-            onClick={() => setCurrentView('jobs')}
-            className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Explore Jobs
-          </button>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-green-400 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-gray-600 font-medium">Fund Projects</p>
-              <p className="text-2xl font-bold text-gray-800">$125K+</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">💰</span>
-            </div>
-          </div>
-          <button
-            onClick={() => setCurrentView('funding')}
-            className="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors"
-          >
-            Fund Impact
-          </button>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-md border-l-4 border-purple-400 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-gray-600 font-medium">Civic Engagement</p>
-              <p className="text-2xl font-bold text-gray-800">45</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl">🗳️</span>
-            </div>
-          </div>
           <button
             onClick={() => setCurrentView('civic')}
-            className="w-full bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 transition-colors"
+            className="bg-white bg-opacity-20 hover:bg-opacity-30 p-4 rounded-lg transition-colors"
           >
-            Get Involved
+            <div className="text-2xl mb-2">🏛️</div>
+            <div className="font-semibold">Civic Engagement</div>
           </button>
-        </div>
-      </div>
-
-      {/* Call to Action */}
-      <div className="bg-white rounded-xl p-8 shadow-md">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">🚀 Your Journey Starts Here</h2>
-        <p className="text-gray-600 mb-6">
-          AfriCore is your all-in-one platform for networking, career development, project funding, civic engagement, and learning. Join thousands of African youth creating positive change.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-lg text-white">
-            <h3 className="text-xl font-bold mb-2">🎓 EduNations</h3>
-            <p className="mb-4">Learn new skills, earn certifications, and advance your career with expert-led courses.</p>
-            <button
-              onClick={() => setCurrentView('education')}
-              className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
-            >
-              Start Learning
-            </button>
-          </div>
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 rounded-lg text-white">
-            <h3 className="text-xl font-bold mb-2">🗳️ AfriVoice</h3>
-            <p className="mb-4">Participate in governance, shape policies, and make your voice heard in democratic processes.</p>
-            <button
-              onClick={() => setCurrentView('civic')}
-              className="bg-white text-purple-600 px-6 py-2 rounded-lg font-semibold hover:bg-purple-50 transition-colors"
-            >
-              Engage Now
-            </button>
-          </div>
+          <button
+            onClick={() => setCurrentView('education')}
+            className="bg-white bg-opacity-20 hover:bg-opacity-30 p-4 rounded-lg transition-colors"
+          >
+            <div className="text-2xl mb-2">📚</div>
+            <div className="font-semibold">Learn & Grow</div>
+          </button>
+          <button
+            onClick={() => setCurrentView('create-project')}
+            className="bg-white bg-opacity-20 hover:bg-opacity-30 p-4 rounded-lg transition-colors"
+          >
+            <div className="text-2xl mb-2">🚀</div>
+            <div className="font-semibold">Start Project</div>
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-// Placeholder components for all features - these would be expanded with full functionality
+// Profile Management with Full CRUD
 function ProfileView({ user, setUser, token }) {
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: user?.full_name || '',
+    country: user?.country || '',
+    age: user?.age || '',
+    bio: user?.bio || '',
+    skills: user?.skills || [],
+    interests: user?.interests || [],
+    linkedin: user?.linkedin || '',
+    github: user?.github || '',
+    website: user?.website || ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleArrayChange = (field, value) => {
+    const items = value.split(',').map(item => item.trim()).filter(item => item);
+    setFormData({
+      ...formData,
+      [field]: items
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/profile/update`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUser(updatedUser);
+        setEditMode(false);
+        setMessage('Profile updated successfully!');
+      } else {
+        const error = await response.json();
+        setMessage(error.detail || 'Failed to update profile');
+      }
+    } catch (error) {
+      setMessage('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (editMode) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">✏️ Edit Profile</h2>
+        
+        {message && (
+          <div className={`p-4 rounded-lg mb-4 ${message.includes('success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+            {message}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+              <input
+                type="text"
+                name="full_name"
+                value={formData.full_name}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+              <input
+                type="text"
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
+              <input
+                type="number"
+                name="age"
+                value={formData.age}
+                onChange={handleChange}
+                min="18"
+                max="35"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn</label>
+              <input
+                type="url"
+                name="linkedin"
+                value={formData.linkedin}
+                onChange={handleChange}
+                placeholder="https://linkedin.com/in/yourprofile"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">GitHub</label>
+              <input
+                type="url"
+                name="github"
+                value={formData.github}
+                onChange={handleChange}
+                placeholder="https://github.com/yourusername"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+              <input
+                type="url"
+                name="website"
+                value={formData.website}
+                onChange={handleChange}
+                placeholder="https://yourwebsite.com"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+            <textarea
+              name="bio"
+              value={formData.bio}
+              onChange={handleChange}
+              rows="4"
+              placeholder="Tell us about yourself..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Skills (comma-separated)</label>
+            <input
+              type="text"
+              value={formData.skills.join(', ')}
+              onChange={(e) => handleArrayChange('skills', e.target.value)}
+              placeholder="JavaScript, Python, Leadership, Marketing"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Interests (comma-separated)</label>
+            <input
+              type="text"
+              value={formData.interests.join(', ')}
+              onChange={(e) => handleArrayChange('interests', e.target.value)}
+              placeholder="Technology, Environment, Education, Arts"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            />
+          </div>
+
+          <div className="flex space-x-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-orange-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Updating...' : 'Update Profile'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditMode(false)}
+              className="bg-gray-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">👤 My Profile</h2>
-      <div className="space-y-4">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">👤 My Profile</h2>
+        <button
+          onClick={() => setEditMode(true)}
+          className="bg-orange-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+        >
+          Edit Profile
+        </button>
+      </div>
+
+      {message && (
+        <div className="bg-green-100 text-green-700 p-4 rounded-lg mb-4">
+          {message}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
           <p className="text-lg text-gray-900">{user?.full_name}</p>
         </div>
+        
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
           <p className="text-lg text-gray-900">{user?.country}</p>
         </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
           <p className="text-lg text-gray-900">{user?.age} years old</p>
         </div>
+        
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
           <p className="text-lg text-gray-900">{user?.email}</p>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Skills</label>
-          <div className="flex flex-wrap gap-2">
-            {user?.skills?.length > 0 ? (
-              user.skills.map((skill, index) => (
-                <span key={index} className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
-                  {skill}
-                </span>
-              ))
-            ) : (
-              <span className="text-gray-500">No skills added yet. Edit your profile to add skills.</span>
-            )}
-          </div>
+      </div>
+
+      {user?.bio && (
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+          <p className="text-gray-900">{user.bio}</p>
+        </div>
+      )}
+
+      <div className="mt-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Skills</label>
+        <div className="flex flex-wrap gap-2">
+          {user?.skills?.length > 0 ? (
+            user.skills.map((skill, index) => (
+              <span key={index} className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
+                {skill}
+              </span>
+            ))
+          ) : (
+            <span className="text-gray-500">No skills added yet. Edit your profile to add skills.</span>
+          )}
         </div>
       </div>
+
+      {user?.interests?.length > 0 && (
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Interests</label>
+          <div className="flex flex-wrap gap-2">
+            {user.interests.map((interest, index) => (
+              <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                {interest}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-6 flex space-x-4">
+        {user?.linkedin && (
+          <a href={user.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+            LinkedIn
+          </a>
+        )}
+        {user?.github && (
+          <a href={user.github} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-800">
+            GitHub
+          </a>
+        )}
+        {user?.website && (
+          <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:text-orange-800">
+            Website
+          </a>
+        )}
+      </div>
     </div>
   );
 }
 
+// User Discovery with Full CRUD
 function DiscoverView({ token, setCurrentView }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users || []);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const connectWithUser = async (userId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/connect`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ user_id: userId })
+      });
+
+      if (response.ok) {
+        // Update the user's connection status
+        setUsers(users.map(user => 
+          user.user_id === userId 
+            ? { ...user, connection_status: 'pending' }
+            : user
+        ));
+      }
+    } catch (error) {
+      console.error('Error connecting with user:', error);
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesName = user.full_name.toLowerCase().includes(filter.toLowerCase());
+    const matchesCountry = countryFilter === '' || user.country === countryFilter;
+    return matchesName && matchesCountry;
+  });
+
+  const countries = [...new Set(users.map(user => user.country))].sort();
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading amazing African youth...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">🌍 Discover African Youth</h2>
-      <p className="text-gray-600 mb-6">Connect with amazing young people across Africa. Build your network and collaborate on projects.</p>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🤝</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Youth Discovery Coming Soon!</h3>
-        <p className="text-gray-600">We're building an amazing way for you to connect with fellow African youth.</p>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">🌍 Discover African Youth</h2>
+        <button
+          onClick={() => setCurrentView('connections')}
+          className="bg-orange-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+        >
+          View Connections
+        </button>
       </div>
+
+      {/* Filters */}
+      <div className="mb-6 flex space-x-4">
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        />
+        <select
+          value={countryFilter}
+          onChange={(e) => setCountryFilter(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+        >
+          <option value="">All Countries</option>
+          {countries.map(country => (
+            <option key={country} value={country}>{country}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* User Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredUsers.map(user => (
+          <div key={user.user_id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="font-semibold text-gray-800">{user.full_name}</h3>
+                <p className="text-sm text-gray-600">{user.country}</p>
+                <p className="text-sm text-gray-500">{user.age} years old</p>
+              </div>
+              <span className="text-2xl">👤</span>
+            </div>
+
+            {user.bio && (
+              <p className="text-sm text-gray-600 mb-3 line-clamp-2">{user.bio}</p>
+            )}
+
+            {user.skills && user.skills.length > 0 && (
+              <div className="mb-3">
+                <div className="flex flex-wrap gap-1">
+                  {user.skills.slice(0, 3).map((skill, index) => (
+                    <span key={index} className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs">
+                      {skill}
+                    </span>
+                  ))}
+                  {user.skills.length > 3 && (
+                    <span className="text-xs text-gray-500">+{user.skills.length - 3} more</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex space-x-2">
+              {user.connection_status === 'connected' ? (
+                <button
+                  disabled
+                  className="flex-1 bg-green-100 text-green-800 px-3 py-2 rounded-lg text-sm font-medium"
+                >
+                  Connected ✓
+                </button>
+              ) : user.connection_status === 'pending' ? (
+                <button
+                  disabled
+                  className="flex-1 bg-yellow-100 text-yellow-800 px-3 py-2 rounded-lg text-sm font-medium"
+                >
+                  Pending...
+                </button>
+              ) : (
+                <button
+                  onClick={() => connectWithUser(user.user_id)}
+                  className="flex-1 bg-orange-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
+                >
+                  Connect
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filteredUsers.length === 0 && (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🔍</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No users found</h3>
+          <p className="text-gray-600">Try adjusting your search filters.</p>
+        </div>
+      )}
     </div>
   );
 }
 
+// Connections Management
 function ConnectionsView({ token }) {
+  const [connections, setConnections] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchConnections();
+  }, []);
+
+  const fetchConnections = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/connections`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setConnections(data.connections || []);
+      }
+    } catch (error) {
+      console.error('Error fetching connections:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeConnection = async (connectionId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/connections/${connectionId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setConnections(connections.filter(conn => conn.connection_id !== connectionId));
+      }
+    } catch (error) {
+      console.error('Error removing connection:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your connections...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">👥 My Connections</h2>
-      <p className="text-gray-600 mb-6">Manage your connections and build meaningful relationships.</p>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">👥</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Connections Coming Soon!</h3>
-        <p className="text-gray-600">Your network will appear here once you start connecting with other youth.</p>
-      </div>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">👥 My Connections</h2>
+
+      {connections.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">👥</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No connections yet</h3>
+          <p className="text-gray-600">Start connecting with amazing African youth to build your network!</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {connections.map(connection => (
+            <div key={connection.connection_id} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h3 className="font-semibold text-gray-800">{connection.full_name}</h3>
+                  <p className="text-sm text-gray-600">{connection.country}</p>
+                  <p className="text-sm text-gray-500">Connected {new Date(connection.created_at).toLocaleDateString()}</p>
+                </div>
+                <span className="text-2xl">🤝</span>
+              </div>
+
+              {connection.bio && (
+                <p className="text-sm text-gray-600 mb-3">{connection.bio}</p>
+              )}
+
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => removeConnection(connection.connection_id)}
+                  className="text-red-600 hover:text-red-800 text-sm"
+                >
+                  Remove Connection
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
+// Jobs Platform with Full CRUD
 function JobsView({ token, user, setCurrentView }) {
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const fetchJobs = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/jobs`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setJobs(data.jobs || []);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyForJob = async (jobId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/jobs/${jobId}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          cover_letter: 'I am interested in this position and would like to apply.',
+          portfolio_links: ''
+        })
+      });
+
+      if (response.ok) {
+        // Update job application status
+        setJobs(jobs.map(job => 
+          job.job_id === jobId 
+            ? { ...job, has_applied: true }
+            : job
+        ));
+      }
+    } catch (error) {
+      console.error('Error applying for job:', error);
+    }
+  };
+
+  const filteredJobs = jobs.filter(job => {
+    const matchesTitle = job.title.toLowerCase().includes(filter.toLowerCase());
+    const matchesType = typeFilter === '' || job.job_type === typeFilter;
+    return matchesTitle && matchesType;
+  });
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading job opportunities...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -654,296 +1168,466 @@ function JobsView({ token, user, setCurrentView }) {
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">💼</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Job Platform Coming Soon!</h3>
-          <p className="text-gray-600">We're building an amazing job marketplace for African youth.</p>
+        {/* Filters */}
+        <div className="mb-6 flex space-x-4">
+          <input
+            type="text"
+            placeholder="Search jobs..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">All Types</option>
+            <option value="full_time">Full Time</option>
+            <option value="part_time">Part Time</option>
+            <option value="contract">Contract</option>
+            <option value="internship">Internship</option>
+          </select>
         </div>
+
+        {/* Job Listings */}
+        <div className="space-y-4">
+          {filteredJobs.map(job => (
+            <div key={job.job_id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">{job.title}</h3>
+                  <p className="text-gray-600 mb-2">{job.organization_name}</p>
+                  <div className="flex space-x-4 text-sm text-gray-500">
+                    <span>{job.location}</span>
+                    <span>{job.job_type}</span>
+                    <span>{job.salary_range}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm mb-2">
+                    {job.job_category}
+                  </span>
+                  <p className="text-sm text-gray-500">Posted {new Date(job.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              <p className="text-gray-700 mb-4">{job.description}</p>
+
+              {job.skills_required && job.skills_required.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-800 mb-2">Required Skills:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {job.skills_required.map((skill, index) => (
+                      <span key={index} className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">Experience: {job.experience_level}</span>
+                {job.has_applied ? (
+                  <button
+                    disabled
+                    className="bg-green-100 text-green-800 px-6 py-2 rounded-lg font-medium"
+                  >
+                    Applied ✓
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => applyForJob(job.job_id)}
+                    className="bg-blue-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                  >
+                    Apply Now
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filteredJobs.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">💼</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No jobs found</h3>
+            <p className="text-gray-600">Try adjusting your search filters or check back later for new opportunities.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
+// My Applications View
 function MyApplicationsView({ token }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">📄 My Applications</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">📄</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">No Applications Yet</h3>
-        <p className="text-gray-600">Your job applications will appear here.</p>
-      </div>
-    </div>
-  );
-}
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-function OrganizationView({ token, user, setCurrentView }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">🏢 Organization Portal</h2>
-      <p className="text-gray-600 mb-6">Register your organization to post jobs and connect with talented African youth.</p>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🏢</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Organization Portal Coming Soon!</h3>
-        <p className="text-gray-600">Post jobs and find amazing talent across Africa.</p>
-      </div>
-    </div>
-  );
-}
+  useEffect(() => {
+    fetchApplications();
+  }, []);
 
-function PostJobView({ token, setCurrentView }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">📝 Post Job</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">📝</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Job Posting Coming Soon!</h3>
-        <p className="text-gray-600">Create job opportunities for African youth.</p>
-      </div>
-    </div>
-  );
-}
+  const fetchApplications = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/applications`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setApplications(data.applications || []);
+      }
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-function ManageApplicationsView({ token }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">📊 Manage Applications</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">📊</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Application Management Coming Soon!</h3>
-        <p className="text-gray-600">Review and manage job applications from talented youth.</p>
-      </div>
-    </div>
-  );
-}
-
-function FundingView({ token, user, setCurrentView }) {
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-8 text-white">
-        <h1 className="text-4xl font-bold mb-4">🌱 AfriFund DAO</h1>
-        <p className="text-xl mb-6">
-          Fund impactful projects across Africa. Support innovation, education, environment, and community development led by African youth.
-        </p>
-        <div className="flex space-x-4">
-          <button
-            onClick={() => setCurrentView('create-project')}
-            className="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors"
-          >
-            Create Project
-          </button>
-          <button
-            onClick={() => setCurrentView('my-projects')}
-            className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-green-600 transition-colors"
-          >
-            My Projects
-          </button>
-        </div>
-      </div>
-
+  if (loading) {
+    return (
       <div className="bg-white rounded-xl shadow-md p-6">
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">🌱</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Crowdfunding Platform Coming Soon!</h3>
-          <p className="text-gray-600">Fund amazing projects that create positive impact across Africa.</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your applications...</p>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function MyProjectsView({ token, setCurrentView }) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">📊 My Projects</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">📊</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">No Projects Yet</h3>
-        <p className="text-gray-600">Create your first impactful project to get started.</p>
-      </div>
-    </div>
-  );
-}
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">📄 My Applications</h2>
 
-function CreateProjectView({ token, setCurrentView }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">🌱 Create Project</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🌱</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Project Creation Coming Soon!</h3>
-        <p className="text-gray-600">Create impactful projects that can change communities.</p>
-      </div>
-    </div>
-  );
-}
-
-function MyContributionsView({ token }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">💰 My Contributions</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">💰</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">No Contributions Yet</h3>
-        <p className="text-gray-600">Start supporting amazing projects to track your impact here.</p>
-      </div>
-    </div>
-  );
-}
-
-function CivicView({ token, user, setCurrentView }) {
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-8 text-white">
-        <h1 className="text-4xl font-bold mb-4">🗳️ AfriVoice</h1>
-        <p className="text-xl mb-6">
-          Your voice matters! Engage in policy discussions, provide feedback on governance, and help shape the future of Africa through democratic participation.
-        </p>
-        <div className="flex space-x-4">
-          <button
-            onClick={() => setCurrentView('create-policy')}
-            className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors"
-          >
-            Propose Policy
-          </button>
-          <button
-            onClick={() => setCurrentView('my-civic')}
-            className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-purple-600 transition-colors"
-          >
-            My Participation
-          </button>
+      {applications.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📄</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No applications yet</h3>
+          <p className="text-gray-600">Start applying for jobs to see your applications here!</p>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-4">
+          {applications.map(application => (
+            <div key={application.application_id} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="font-semibold text-gray-800">{application.job_title}</h3>
+                  <p className="text-sm text-gray-600">{application.organization_name}</p>
+                  <p className="text-sm text-gray-500">Applied {new Date(application.created_at).toLocaleDateString()}</p>
+                </div>
+                <span className={`inline-block px-3 py-1 rounded-full text-sm ${
+                  application.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  application.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {application.status}
+                </span>
+              </div>
 
+              {application.cover_letter && (
+                <p className="text-sm text-gray-600 mb-2">
+                  <strong>Cover Letter:</strong> {application.cover_letter}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Organization Dashboard
+function OrganizationDashboard({ token, user, setCurrentView }) {
+  const [organization, setOrganization] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+
+  useEffect(() => {
+    checkOrganization();
+  }, []);
+
+  const checkOrganization = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/organizations`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Check if user has an organization
+        const userOrg = data.organizations.find(org => org.created_by === user.user_id);
+        if (userOrg) {
+          setOrganization(userOrg);
+        } else {
+          setShowRegistrationForm(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking organization:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
       <div className="bg-white rounded-xl shadow-md p-6">
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">🗳️</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Civic Engagement Platform Coming Soon!</h3>
-          <p className="text-gray-600">Participate in governance and shape policies that affect African youth.</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading organization details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (showRegistrationForm) {
+    return <OrganizationRegistration token={token} onSuccess={checkOrganization} />;
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">🏢 Organization Dashboard</h2>
+      
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">{organization?.name}</h3>
+        <p className="text-gray-600">{organization?.description}</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="border border-gray-200 rounded-lg p-4">
+          <h4 className="font-medium text-gray-800 mb-2">Organization Details</h4>
+          <div className="space-y-2 text-sm">
+            <p><strong>Type:</strong> {organization?.organization_type}</p>
+            <p><strong>Country:</strong> {organization?.country}</p>
+            <p><strong>Size:</strong> {organization?.size}</p>
+            <p><strong>Founded:</strong> {organization?.founded_year}</p>
+          </div>
+        </div>
+
+        <div className="border border-gray-200 rounded-lg p-4">
+          <h4 className="font-medium text-gray-800 mb-2">Quick Actions</h4>
+          <div className="space-y-2">
+            <button
+              onClick={() => setCurrentView('post-job')}
+              className="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Post New Job
+            </button>
+            <button
+              onClick={() => setCurrentView('manage-applications')}
+              className="w-full bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Manage Applications
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function MyCivicParticipationView({ token, setCurrentView }) {
+// Organization Registration Component
+function OrganizationRegistration({ token, onSuccess }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    organization_type: '',
+    country: '',
+    website: '',
+    contact_email: '',
+    contact_phone: '',
+    size: '',
+    founded_year: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/organization/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        onSuccess();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || 'Failed to register organization');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">🏆 My Civic Participation</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🏆</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">No Civic Activity Yet</h3>
-        <p className="text-gray-600">Start participating in civic discussions to track your engagement.</p>
-      </div>
-    </div>
-  );
-}
-
-function CreatePolicyView({ token, setCurrentView }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">🗳️ Create Policy</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🗳️</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Policy Creation Coming Soon!</h3>
-        <p className="text-gray-600">Propose policies that can improve governance and society.</p>
-      </div>
-    </div>
-  );
-}
-
-function CivicForumsView({ token, setCurrentView }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">💬 Civic Forums</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">💬</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Civic Forums Coming Soon!</h3>
-        <p className="text-gray-600">Engage in discussions about civic issues and governance.</p>
-      </div>
-    </div>
-  );
-}
-
-function EducationView({ token, user, setCurrentView }) {
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-8 text-white">
-        <h1 className="text-4xl font-bold mb-4">🎓 EduNations</h1>
-        <p className="text-xl mb-6">
-          Unlock your potential with world-class education. Learn new skills, earn certifications, and build your career with courses designed for African youth.
-        </p>
-        <div className="flex space-x-4">
-          <button
-            onClick={() => setCurrentView('create-course')}
-            className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
-          >
-            Teach a Course
-          </button>
-          <button
-            onClick={() => setCurrentView('my-courses')}
-            className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-          >
-            My Learning
-          </button>
-          <button
-            onClick={() => setCurrentView('mentorship')}
-            className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-          >
-            Find Mentor
-          </button>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">🏢 Register Your Organization</h2>
+      
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
         </div>
-      </div>
+      )}
 
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🎓</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Learning Platform Coming Soon!</h3>
-          <p className="text-gray-600">Access world-class education and skill development programs.</p>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Organization Type</label>
+            <select
+              name="organization_type"
+              value={formData.organization_type}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Type</option>
+              <option value="startup">Startup</option>
+              <option value="ngo">NGO</option>
+              <option value="government">Government</option>
+              <option value="corporation">Corporation</option>
+              <option value="non_profit">Non-Profit</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+            <input
+              type="text"
+              name="country"
+              value={formData.country}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Company Size</label>
+            <select
+              name="size"
+              value={formData.size}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Size</option>
+              <option value="1-10 employees">1-10 employees</option>
+              <option value="11-50 employees">11-50 employees</option>
+              <option value="51-200 employees">51-200 employees</option>
+              <option value="201-1000 employees">201-1000 employees</option>
+              <option value="1000+ employees">1000+ employees</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+            <input
+              type="url"
+              name="website"
+              value={formData.website}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Founded Year</label>
+            <input
+              type="number"
+              name="founded_year"
+              value={formData.founded_year}
+              onChange={handleChange}
+              min="1900"
+              max="2024"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-function MyCoursesView({ token, setCurrentView }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">📚 My Learning</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">📚</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">No Courses Yet</h3>
-        <p className="text-gray-600">Enroll in courses to start your learning journey.</p>
-      </div>
-    </div>
-  );
-}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows="4"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            required
+          />
+        </div>
 
-function CreateCourseView({ token, setCurrentView }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">🎓 Create Course</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🎓</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Course Creation Coming Soon!</h3>
-        <p className="text-gray-600">Share your knowledge by creating educational courses.</p>
-      </div>
-    </div>
-  );
-}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
+            <input
+              type="email"
+              name="contact_email"
+              value={formData.contact_email}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
 
-function MentorshipView({ token, setCurrentView }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">🎯 Mentorship</h2>
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🎯</div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Mentorship Platform Coming Soon!</h3>
-        <p className="text-gray-600">Connect with mentors and accelerate your growth.</p>
-      </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone</label>
+            <input
+              type="tel"
+              name="contact_phone"
+              value={formData.contact_phone}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Registering...' : 'Register Organization'}
+        </button>
+      </form>
     </div>
   );
 }
