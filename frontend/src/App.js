@@ -49,13 +49,14 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
       <Header user={user} logout={logout} currentView={currentView} setCurrentView={setCurrentView} />
       <main className="container mx-auto px-4 py-8">
-        {currentView === 'home' && <HomeView user={user} setCurrentView={setCurrentView} />}
+        {currentView === 'home' && <HomeView user={user} setCurrentView={setCurrentView} token={token} />}
         {currentView === 'profile' && <ProfileView user={user} setUser={setUser} token={token} />}
         {currentView === 'discover' && <DiscoverView token={token} setCurrentView={setCurrentView} />}
         {currentView === 'connections' && <ConnectionsView token={token} />}
         {currentView === 'jobs' && <JobsView token={token} user={user} setCurrentView={setCurrentView} />}
         {currentView === 'post-job' && <PostJobView token={token} setCurrentView={setCurrentView} />}
         {currentView === 'my-applications' && <MyApplicationsView token={token} />}
+        {currentView === 'employer' && <OrganizationDashboard token={token} user={user} setCurrentView={setCurrentView} />}
         {currentView === 'organization' && <OrganizationDashboard token={token} user={user} setCurrentView={setCurrentView} />}
         {currentView === 'funding' && <ProjectsView token={token} user={user} setCurrentView={setCurrentView} />}
         {currentView === 'my-projects' && <MyProjectsView token={token} setCurrentView={setCurrentView} />}
