@@ -333,6 +333,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "The CreateCourseView and MyCoursesView components are now fully implemented and working correctly. Users can create new courses with all required fields and view their enrolled courses. The course creation form is functional, though there was an issue with form submission that may be related to backend API limitations. The My Courses view displays correctly, showing enrollment statistics and a message when no enrollments exist yet."
+      - working: true
+        agent: "testing"
+        comment: "Fixed the missing MentorshipView component. The component was referenced in App.js but not implemented, which would cause an error when users clicked on the Mentorship button in the Education tab. Implemented a basic MentorshipView component that matches the style of the other components in the application."
 
 metadata:
   created_by: "main_agent"
