@@ -1137,7 +1137,7 @@ class AuthenticationTest(unittest.TestCase):
         
         # Update token
         self.__class__.token = data["access_token"]
-        print(f"✅ Specific user login successful: test@example.com")
+        print(f"✅ Specific user login successful: junior@example.com")
 
     def test_03_get_specific_profile(self):
         """Test getting user profile for the specific test user"""
