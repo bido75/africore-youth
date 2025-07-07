@@ -309,9 +309,9 @@ frontend:
 
   - task: "Education & Learning Frontend"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 1
+    stuck_count: 2
     priority: "high"
     needs_retesting: false
     status_history:
@@ -324,6 +324,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Education & Learning functionality is now working correctly. The UI loads properly and users can access the course creation feature. However, there are no courses available to enroll in, which aligns with the backend testing that showed some course-related endpoints returning 404 errors. The core functionality is implemented and working, but there's no data to interact with."
+      - working: false
+        agent: "testing"
+        comment: "Critical issue found: The CreateCourseView and MyCoursesView components are referenced in the App.js file but are not actually implemented. This means users cannot create courses or view their enrolled courses, which are core features of the Education & Learning functionality."
 
 metadata:
   created_by: "main_agent"
