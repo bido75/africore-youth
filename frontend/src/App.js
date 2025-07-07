@@ -1867,53 +1867,67 @@ function DiscoverView({ token, setCurrentView }) {
   };
 
   const connectWithUser = async (userId) => {
-    console.log('connectWithUser called with userId:', userId);
+    console.log('🚀 connectWithUser called with userId:', userId);
     
     try {
+      const requestPayload = { 
+        target_user_id: userId,
+        message: "I'd like to connect with you on AfriCore!"
+      };
+      
+      console.log('📤 Sending connection request:', requestPayload);
+      
       const response = await fetch(`${API_URL}/api/connect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
-          target_user_id: userId,
-          message: "I'd like to connect with you on AfriCore!"
-        })
+        body: JSON.stringify(requestPayload)
       });
 
-      console.log('Connect API response status:', response.status);
+      console.log('📡 Connect API response status:', response.status);
       
       if (response.ok) {
         const responseData = await response.json();
-        console.log('Connection request successful:', responseData);
+        console.log('✅ Connection request successful:', responseData);
         
         // Update the user's connection status
-        setUsers(users.map(user => 
+        setUsers(prevUsers => prevUsers.map(user => 
           user.user_id === userId 
             ? { ...user, connection_status: 'pending' }
             : user
         ));
-        console.log('User state updated to pending for userId:', userId);
+        console.log('🔄 User state updated to pending for userId:', userId);
+        
+        // Show success feedback
+        alert('Connection request sent successfully!');
+        
       } else if (response.status === 400) {
         const errorData = await response.json();
-        console.log('Connection already exists:', errorData);
+        console.log('⚠️ Connection already exists:', errorData);
         
         // If connection already exists, mark as connected
         if (errorData.detail?.includes('already exists')) {
-          setUsers(users.map(user => 
+          setUsers(prevUsers => prevUsers.map(user => 
             user.user_id === userId 
               ? { ...user, connection_status: 'connected' }
               : user
           ));
-          console.log('User state updated to connected for userId:', userId);
+          console.log('✅ User state updated to connected for userId:', userId);
+          alert('You are already connected with this user!');
+        } else {
+          console.error('❌ Connection failed:', errorData);
+          alert('Connection failed: ' + (errorData.detail || 'Unknown error'));
         }
       } else {
         const errorData = await response.json();
-        console.error('Connection failed with status:', response.status, errorData);
+        console.error('❌ Connection failed with status:', response.status, errorData);
+        alert('Connection failed: ' + (errorData.detail || 'Server error'));
       }
     } catch (error) {
-      console.error('Error connecting with user:', error);
+      console.error('💥 Error connecting with user:', error);
+      alert('Network error. Please check your connection and try again.');
     }
   };
 
