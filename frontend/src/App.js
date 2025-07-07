@@ -1545,7 +1545,7 @@ function ProfileView({ user, setUser, token }) {
     setMessage('');
 
     try {
-      const response = await fetch(`${API_URL}/api/profile/update`, {
+      const response = await fetch(`${API_URL}/api/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
