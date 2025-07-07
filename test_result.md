@@ -317,7 +317,7 @@ test_plan:
     - "User workflow testing"
     - "Fix authentication issues"
   stuck_tasks:
-    - "Authentication & User Management"
+    - "Profile Management Frontend"
   test_all: true
   test_priority: "integration_testing"
 
