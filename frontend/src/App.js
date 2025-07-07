@@ -73,6 +73,108 @@ function App() {
   );
 }
 
+// Mentorship Component
+function MentorshipView({ token }) {
+  const [mentors, setMentors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+
+  useEffect(() => {
+    fetchMentors();
+  }, []);
+
+  const fetchMentors = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/mentors`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setMentors(data.mentors || []);
+      }
+    } catch (error) {
+      console.error('Error fetching mentors:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading mentorship opportunities...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-8 text-white">
+        <h1 className="text-4xl font-bold mb-4">👨‍🏫 AfriMentors</h1>
+        <p className="text-xl mb-6">
+          Connect with experienced mentors across Africa. Get guidance, support, and insights to accelerate your growth.
+        </p>
+        <div className="flex space-x-4">
+          <button
+            className="bg-white text-indigo-600 px-6 py-3 rounded-lg font-semibold hover:bg-indigo-50 transition-colors"
+          >
+            Find a Mentor
+          </button>
+          <button
+            className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-indigo-600 transition-colors"
+          >
+            Become a Mentor
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-md p-6">
+        {/* Filters */}
+        <div className="mb-6 flex space-x-4">
+          <input
+            type="text"
+            placeholder="Search mentors..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          >
+            <option value="">All Expertise</option>
+            <option value="technology">Technology</option>
+            <option value="business">Business</option>
+            <option value="design">Design</option>
+            <option value="marketing">Marketing</option>
+            <option value="finance">Finance</option>
+            <option value="healthcare">Healthcare</option>
+            <option value="education">Education</option>
+            <option value="agriculture">Agriculture</option>
+            <option value="environment">Environment</option>
+          </select>
+        </div>
+
+        {/* Mentors Grid or Empty State */}
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">👨‍🏫</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Mentorship Coming Soon!</h3>
+          <p className="text-gray-600">We're currently building our mentorship platform. Check back soon for amazing mentors across Africa!</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Create Policy Component - MISSING IMPLEMENTATION
 function CreatePolicyView({ token, setCurrentView }) {
   const [formData, setFormData] = useState({
