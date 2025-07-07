@@ -240,9 +240,9 @@ frontend:
 
   - task: "User Discovery & Connections Frontend"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 3
+    stuck_count: 4
     priority: "high"
     needs_retesting: false
     status_history:
@@ -270,6 +270,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Fix verified: Code inspection confirms the Connect button implementation has been enhanced with multiple event prevention methods (e.preventDefault, e.stopPropagation, e.nativeEvent.stopImmediatePropagation), type='button' attribute, and pointerEvents style. The connectWithUser function correctly uses 'target_user_id' instead of 'user_id' and includes proper logging. These changes should prevent the navigation issue and ensure the connection request is sent correctly."
+      - working: false
+        agent: "testing"
+        comment: "Comprehensive testing of the connections system reveals that the Connect button is still not functioning as expected. When clicking the Connect button, the user is redirected to the Connections page instead of sending a connection request and staying on the Discovery page. Network logs show that both /api/connect and /api/connections requests are being made, but the connection is not being created. The Connections page shows 'No connections yet' even after attempting to connect with users. This indicates that the event bubbling prevention measures are not fully effective, and the connection request is not being properly processed by the backend."
 
   - task: "Jobs & Employment Frontend"
     implemented: true
