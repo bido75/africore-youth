@@ -73,6 +73,305 @@ function App() {
   );
 }
 
+// Create Policy Component - MISSING IMPLEMENTATION
+function CreatePolicyView({ token, setCurrentView }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    proposal_type: '',
+    target_location: '',
+    expected_impact: '',
+    implementation_timeline: '',
+    resources_needed: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`${API_URL}/api/policies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...formData,
+          supporting_documents: []
+        })
+      });
+
+      if (response.ok) {
+        setMessage('Policy proposal created successfully!');
+        setTimeout(() => setCurrentView('civic'), 2000);
+      } else {
+        const error = await response.json();
+        setMessage(error.detail || 'Failed to create policy proposal');
+      }
+    } catch (error) {
+      setMessage('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">📜 Propose Policy</h2>
+      
+      {message && (
+        <div className={`p-4 rounded-lg mb-4 ${message.includes('success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          {message}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Policy Title</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Category</option>
+              <option value="education">Education</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="environment">Environment</option>
+              <option value="economy">Economy</option>
+              <option value="technology">Technology</option>
+              <option value="infrastructure">Infrastructure</option>
+              <option value="social">Social Issues</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Proposal Type</label>
+            <select
+              name="proposal_type"
+              value={formData.proposal_type}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Type</option>
+              <option value="youth_initiative">Youth Initiative</option>
+              <option value="policy_reform">Policy Reform</option>
+              <option value="new_legislation">New Legislation</option>
+              <option value="community_program">Community Program</option>
+              <option value="government_feedback">Government Feedback</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Target Location</label>
+            <input
+              type="text"
+              name="target_location"
+              value={formData.target_location}
+              onChange={handleChange}
+              placeholder="e.g., Nigeria, Lagos State, All of Africa"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Implementation Timeline</label>
+            <input
+              type="text"
+              name="implementation_timeline"
+              value={formData.implementation_timeline}
+              onChange={handleChange}
+              placeholder="e.g., 6 months, 1 year"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              required
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Policy Description</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows="4"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Expected Impact</label>
+          <textarea
+            name="expected_impact"
+            value={formData.expected_impact}
+            onChange={handleChange}
+            rows="3"
+            placeholder="Describe the positive changes this policy will bring..."
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Resources Needed</label>
+          <textarea
+            name="resources_needed"
+            value={formData.resources_needed}
+            onChange={handleChange}
+            rows="3"
+            placeholder="What resources, support, or changes are needed to implement this policy?"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        </div>
+
+        <div className="flex space-x-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-purple-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-600 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Creating...' : 'Create Policy Proposal'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentView('civic')}
+            className="bg-gray-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// My Civic Participation Component - MISSING IMPLEMENTATION
+function MyCivicParticipationView({ token }) {
+  const [participation, setParticipation] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMyCivicParticipation();
+  }, []);
+
+  const fetchMyCivicParticipation = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/civic_participation`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setParticipation(data.participation || []);
+      }
+    } catch (error) {
+      console.error('Error fetching civic participation:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your civic participation...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const supportCount = participation.filter(p => p.participation_type === 'support').length;
+  const opposeCount = participation.filter(p => p.participation_type === 'oppose').length;
+  const feedbackCount = participation.filter(p => p.participation_type === 'feedback').length;
+
+  return (
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">🗳️ My Civic Participation</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-green-50 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-green-800 mb-2">Supported</h3>
+          <p className="text-2xl font-bold text-green-600">{supportCount}</p>
+          <p className="text-green-700">policies supported</p>
+        </div>
+        <div className="bg-red-50 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-red-800 mb-2">Opposed</h3>
+          <p className="text-2xl font-bold text-red-600">{opposeCount}</p>
+          <p className="text-red-700">policies opposed</p>
+        </div>
+        <div className="bg-purple-50 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-purple-800 mb-2">Feedback</h3>
+          <p className="text-2xl font-bold text-purple-600">{feedbackCount}</p>
+          <p className="text-purple-700">feedback provided</p>
+        </div>
+      </div>
+
+      {participation.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🗳️</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No civic participation yet</h3>
+          <p className="text-gray-600">Start participating in policy discussions to make your voice heard!</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {participation.map(item => (
+            <div key={item.participation_id} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="font-semibold text-gray-800">{item.policy_title}</h3>
+                  <p className="text-sm text-gray-600">
+                    {item.participation_type === 'support' && '👍 Supported'}
+                    {item.participation_type === 'oppose' && '👎 Opposed'}
+                    {item.participation_type === 'feedback' && '💬 Provided Feedback'}
+                  </p>
+                  <p className="text-sm text-gray-500">on {new Date(item.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              {item.feedback && (
+                <div className="mt-3 bg-gray-50 rounded-lg p-3">
+                  <p className="text-sm text-gray-700"><strong>Your feedback:</strong> {item.feedback}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+
 // Education/Courses with Full CRUD
 function CoursesView({ token, user, setCurrentView }) {
   const [courses, setCourses] = useState([]);
