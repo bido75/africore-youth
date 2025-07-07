@@ -1246,6 +1246,22 @@ function Header({ user, logout, currentView, setCurrentView }) {
               >
                 Education
               </button>
+              <button
+                onClick={() => setCurrentView('connections')}
+                className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                  currentView === 'connections' ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:text-orange-600'
+                }`}
+              >
+                Connections
+              </button>
+              <button
+                onClick={() => setCurrentView('employer')}
+                className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                  currentView === 'employer' ? 'bg-orange-100 text-orange-700' : 'text-gray-600 hover:text-orange-600'
+                }`}
+              >
+                Employer
+              </button>
             </nav>
           </div>
           
