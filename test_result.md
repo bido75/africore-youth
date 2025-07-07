@@ -342,13 +342,8 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Implement missing CreatePolicyView component"
-    - "Implement missing MyCivicParticipationView component"
-    - "Implement missing CreateCourseView component"
-    - "Implement missing MyCoursesView component"
-  stuck_tasks:
-    - "Civic Engagement Frontend"
-    - "Education & Learning Frontend"
+    - "End-to-end testing of all features"
+  stuck_tasks: []
   test_all: true
   test_priority: "integration_testing"
 
