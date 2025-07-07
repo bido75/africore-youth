@@ -252,6 +252,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "Critical issue found with the Connect button functionality. The button is visible and can be clicked, but it doesn't change state to 'Pending...' after clicking. Investigation revealed a parameter name mismatch between frontend and backend: the frontend sends 'user_id' but the backend API expects 'target_user_id'. This prevents users from connecting with others on the platform."
+      - working: false
+        agent: "testing"
+        comment: "Further investigation revealed a more complex issue: clicking the Connect button is navigating to the Connections tab instead of triggering the connectWithUser function. This is likely due to event bubbling or a navigation setup that's intercepting the click event. When the button is clicked, it makes GET requests to /api/connections instead of a POST request to /api/connect, and the button text changes to 'Connections' (the tab name) rather than 'Pending...'."
 
   - task: "Jobs & Employment Frontend"
     implemented: true
