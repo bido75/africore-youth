@@ -198,7 +198,7 @@ frontend:
 
   - task: "AfriCore Authentication & UI"
     implemented: true
-    working: false
+    working: true
     file: "/app/frontend/src/App.js"
     stuck_count: 1
     priority: "high"
@@ -210,6 +210,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "Authentication is not working. Login attempts return 401 Unauthorized and registration attempts return 422 Unprocessable Entity. The login UI is displayed correctly, but functionality is broken."
+      - working: true
+        agent: "testing"
+        comment: "Authentication is now working correctly. Successfully tested registration, login, and profile access with the specified test credentials. The ObjectId serialization fix has resolved the previous issues."
 
   - task: "Profile Management Frontend"
     implemented: true
