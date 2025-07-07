@@ -348,8 +348,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "End-to-end testing of all features"
-  stuck_tasks: []
+    - "User Discovery & Connections Frontend"
+  stuck_tasks:
+    - "User Discovery & Connections Frontend"
   test_all: true
   test_priority: "integration_testing"
 
