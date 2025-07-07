@@ -1267,12 +1267,6 @@ function Header({ user, logout, currentView, setCurrentView }) {
           </div>
           
           <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setCurrentView('connections')}
-              className="p-2 text-gray-600 hover:text-orange-600 transition-colors"
-            >
-              <span className="text-lg">👥</span>
-            </button>
             <div className="relative">
               <button
                 onClick={() => setCurrentView('profile')}
