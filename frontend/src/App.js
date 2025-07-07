@@ -1838,6 +1838,8 @@ function DiscoverView({ token, setCurrentView }) {
   };
 
   const connectWithUser = async (userId) => {
+    console.log('connectWithUser called with userId:', userId);
+    
     try {
       const response = await fetch(`${API_URL}/api/connect`, {
         method: 'POST',
@@ -1851,17 +1853,22 @@ function DiscoverView({ token, setCurrentView }) {
         })
       });
 
+      console.log('Connect API response status:', response.status);
+      
       if (response.ok) {
+        const responseData = await response.json();
+        console.log('Connection request successful:', responseData);
+        
         // Update the user's connection status
         setUsers(users.map(user => 
           user.user_id === userId 
             ? { ...user, connection_status: 'pending' }
             : user
         ));
-        console.log('Connection request sent successfully');
+        console.log('User state updated to pending for userId:', userId);
       } else {
         const errorData = await response.json();
-        console.error('Connection failed:', errorData);
+        console.error('Connection failed with status:', response.status, errorData);
       }
     } catch (error) {
       console.error('Error connecting with user:', error);
