@@ -336,11 +336,13 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Backend API Testing - Verify all endpoints working with frontend"
-    - "Full feature integration testing"
-    - "User workflow testing"
-    - "Fix authentication issues"
-  stuck_tasks: []
+    - "Implement missing CreatePolicyView component"
+    - "Implement missing MyCivicParticipationView component"
+    - "Implement missing CreateCourseView component"
+    - "Implement missing MyCoursesView component"
+  stuck_tasks:
+    - "Civic Engagement Frontend"
+    - "Education & Learning Frontend"
   test_all: true
   test_priority: "integration_testing"
 
