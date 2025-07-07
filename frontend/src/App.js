@@ -1295,8 +1295,77 @@ function Header({ user, logout, currentView, setCurrentView }) {
   );
 }
 
-// Home View
-function HomeView({ user, setCurrentView }) {
+// Home View with Real-time Statistics
+function HomeView({ user, setCurrentView, token }) {
+  const [stats, setStats] = useState({
+    jobsCount: 0,
+    projectsFunding: 0,
+    civicEngagement: 0,
+    networkCount: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPlatformStats();
+  }, []);
+
+  const fetchPlatformStats = async () => {
+    try {
+      // Fetch jobs count
+      const jobsResponse = await fetch(`${API_URL}/api/jobs`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      // Fetch projects funding
+      const projectsResponse = await fetch(`${API_URL}/api/projects`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      // Fetch policies count
+      const policiesResponse = await fetch(`${API_URL}/api/policies`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      // Fetch users count
+      const usersResponse = await fetch(`${API_URL}/api/users`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      let jobsCount = 0, totalFunding = 0, policiesCount = 0, usersCount = 0;
+
+      if (jobsResponse.ok) {
+        const jobsData = await jobsResponse.json();
+        jobsCount = jobsData.jobs?.length || 0;
+      }
+
+      if (projectsResponse.ok) {
+        const projectsData = await projectsResponse.json();
+        totalFunding = projectsData.projects?.reduce((sum, project) => sum + (project.current_funding || 0), 0) || 0;
+      }
+
+      if (policiesResponse.ok) {
+        const policiesData = await policiesResponse.json();
+        policiesCount = policiesData.policies?.length || 0;
+      }
+
+      if (usersResponse.ok) {
+        const usersData = await usersResponse.json();
+        usersCount = usersData.users?.length || 0;
+      }
+
+      setStats({
+        jobsCount,
+        projectsFunding: totalFunding,
+        civicEngagement: policiesCount,
+        networkCount: usersCount
+      });
+    } catch (error) {
+      console.error('Error fetching platform stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-12">
       {/* Hero Section */}
@@ -1307,43 +1376,102 @@ function HomeView({ user, setCurrentView }) {
         <p className="text-xl text-gray-600 mb-8">
           Your gateway to connecting with African youth, finding opportunities, and building the future of our continent.
         </p>
+      </div>
+
+      {/* Platform Statistics - Like your screenshot */}
+      <div className="bg-white rounded-xl shadow-lg p-8">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Platform Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="text-center">
+            <div className="bg-blue-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+              <span className="text-2xl">👥</span>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">Youth Network</h3>
+            {loading ? (
+              <p className="text-sm text-gray-500">Loading...</p>
+            ) : (
+              <p className="text-2xl font-bold text-blue-600">{stats.networkCount}</p>
+            )}
+            <p className="text-sm text-gray-500">Connected Youth</p>
+          </div>
+
+          <div className="text-center">
+            <div className="bg-green-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+              <span className="text-2xl">💼</span>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">Jobs & Opportunities</h3>
+            {loading ? (
+              <p className="text-sm text-gray-500">Loading...</p>
+            ) : (
+              <p className="text-2xl font-bold text-green-600">{stats.jobsCount}</p>
+            )}
+            <p className="text-sm text-gray-500">Available Positions</p>
+          </div>
+
+          <div className="text-center">
+            <div className="bg-purple-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+              <span className="text-2xl">💰</span>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">Fund Projects</h3>
+            {loading ? (
+              <p className="text-sm text-gray-500">Loading...</p>
+            ) : (
+              <p className="text-2xl font-bold text-purple-600">${(stats.projectsFunding / 1000).toFixed(0)}K+</p>
+            )}
+            <p className="text-sm text-gray-500">Total Funding</p>
+          </div>
+
+          <div className="text-center">
+            <div className="bg-orange-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
+              <span className="text-2xl">🏛️</span>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">Civic Engagement</h3>
+            {loading ? (
+              <p className="text-sm text-gray-500">Loading...</p>
+            ) : (
+              <p className="text-2xl font-bold text-orange-600">{stats.civicEngagement}</p>
+            )}
+            <p className="text-sm text-gray-500">Active Policies</p>
+          </div>
+        </div>
+      </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <div className="text-4xl mb-4">🤝</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Connect</h3>
-            <p className="text-gray-600 mb-4">Build meaningful relationships with fellow African youth across the continent.</p>
-            <button
-              onClick={() => setCurrentView('discover')}
-              className="bg-orange-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
-            >
-              Start Connecting
-            </button>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <div className="text-4xl mb-4">💼</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Opportunities</h3>
-            <p className="text-gray-600 mb-4">Discover jobs, internships, and entrepreneurial opportunities designed for African youth.</p>
-            <button
-              onClick={() => setCurrentView('jobs')}
-              className="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
-            >
-              Explore Jobs
-            </button>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <div className="text-4xl mb-4">🌱</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Impact</h3>
-            <p className="text-gray-600 mb-4">Fund and support impactful projects that create positive change across Africa.</p>
-            <button
-              onClick={() => setCurrentView('funding')}
-              className="bg-green-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-600 transition-colors"
-            >
-              Make Impact
-            </button>
-          </div>
+      {/* Feature Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="text-4xl mb-4">🤝</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Connect</h3>
+          <p className="text-gray-600 mb-4">Build meaningful relationships with fellow African youth across the continent.</p>
+          <button
+            onClick={() => setCurrentView('discover')}
+            className="bg-orange-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+          >
+            Start Connecting
+          </button>
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="text-4xl mb-4">💼</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Opportunities</h3>
+          <p className="text-gray-600 mb-4">Discover jobs, internships, and entrepreneurial opportunities designed for African youth.</p>
+          <button
+            onClick={() => setCurrentView('jobs')}
+            className="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+          >
+            Explore Jobs
+          </button>
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="text-4xl mb-4">🌱</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Impact</h3>
+          <p className="text-gray-600 mb-4">Fund and support impactful projects that create positive change across Africa.</p>
+          <button
+            onClick={() => setCurrentView('funding')}
+            className="bg-green-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-600 transition-colors"
+          >
+            Make Impact
+          </button>
         </div>
       </div>
 
