@@ -1845,7 +1845,7 @@ function DiscoverView({ token, setCurrentView }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ user_id: userId })
+        body: JSON.stringify({ target_user_id: userId })
       });
 
       if (response.ok) {
