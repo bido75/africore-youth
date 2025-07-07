@@ -288,9 +288,9 @@ frontend:
 
   - task: "Civic Engagement Frontend"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 1
+    stuck_count: 2
     priority: "high"
     needs_retesting: false
     status_history:
@@ -303,6 +303,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Civic Engagement functionality is now working correctly. Users can view policies, vote on policies (support/oppose), and provide feedback. The policy creation feature is also available, though there was an error when trying to navigate to the propose policy page."
+      - working: false
+        agent: "testing"
+        comment: "Critical issue found: The CreatePolicyView and MyCivicParticipationView components are referenced in the App.js file but are not actually implemented. This means users cannot create policies or view their civic participation history, which are core features of the Civic Engagement functionality."
 
   - task: "Education & Learning Frontend"
     implemented: true
