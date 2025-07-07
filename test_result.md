@@ -353,10 +353,8 @@ metadata:
   run_ui: true
 
 test_plan:
-  current_focus:
-    - "User Discovery & Connections Frontend"
-  stuck_tasks:
-    - "User Discovery & Connections Frontend"
+  current_focus: []
+  stuck_tasks: []
   test_all: true
   test_priority: "integration_testing"
 
