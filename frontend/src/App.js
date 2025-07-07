@@ -1866,6 +1866,19 @@ function DiscoverView({ token, setCurrentView }) {
             : user
         ));
         console.log('User state updated to pending for userId:', userId);
+      } else if (response.status === 400) {
+        const errorData = await response.json();
+        console.log('Connection already exists:', errorData);
+        
+        // If connection already exists, mark as connected
+        if (errorData.detail?.includes('already exists')) {
+          setUsers(users.map(user => 
+            user.user_id === userId 
+              ? { ...user, connection_status: 'connected' }
+              : user
+          ));
+          console.log('User state updated to connected for userId:', userId);
+        }
       } else {
         const errorData = await response.json();
         console.error('Connection failed with status:', response.status, errorData);
