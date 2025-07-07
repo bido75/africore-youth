@@ -216,9 +216,9 @@ frontend:
 
   - task: "Profile Management Frontend"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 1
+    stuck_count: 2
     priority: "high"
     needs_retesting: false
     status_history:
@@ -231,6 +231,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Profile management is now working correctly. Users can view their profile information and edit their profile details including bio, skills, and interests. The profile update functionality works as expected."
+      - working: false
+        agent: "testing"
+        comment: "Critical issue found in production environment: Profile update functionality is broken. When attempting to update a profile, the app makes a request to a malformed URL: 'c3d4d01-4429-4235-9-e1/profile/update1' instead of the correct '/api/profile/update'. This results in a 404 Not Found error. The profile edit form loads correctly, but updates cannot be saved due to this endpoint error."
 
   - task: "User Discovery & Connections Frontend"
     implemented: true
