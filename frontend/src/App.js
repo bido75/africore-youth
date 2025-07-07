@@ -2068,9 +2068,15 @@ function ConnectionsView({ token }) {
       if (response.ok) {
         const data = await response.json();
         setConnections(data.connections || []);
+      } else {
+        console.log('Could not fetch connections - API returned:', response.status);
+        // Set empty connections array if fetch fails
+        setConnections([]);
       }
     } catch (error) {
-      console.error('Error fetching connections:', error);
+      console.log('Connection fetch failed (likely CORS or network issue):', error.message);
+      // Set empty connections array if fetch fails
+      setConnections([]);
     } finally {
       setLoading(false);
     }
