@@ -1123,7 +1123,7 @@ class AuthenticationTest(unittest.TestCase):
     def test_02_login_specific_user(self):
         """Test user login with specific test credentials"""
         payload = {
-            "email": "test@example.com",
+            "email": "junior@example.com",
             "password": "password123"
         }
         
