@@ -237,9 +237,9 @@ frontend:
 
   - task: "User Discovery & Connections Frontend"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 2
+    stuck_count: 3
     priority: "high"
     needs_retesting: false
     status_history:
@@ -261,6 +261,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "The Connect button functionality has been fixed. Testing confirms that clicking the Connect button now navigates to the Connections tab as expected. The implementation now correctly uses 'target_user_id' instead of 'user_id', includes a connection message, and prevents event bubbling with e.preventDefault() and e.stopPropagation(). The connection process is working properly."
+      - working: false
+        agent: "testing"
+        comment: "Critical issue found in production environment: Connect button functionality is still broken. When clicking the Connect button, the app navigates to the Connections tab instead of sending a connection request. Network logs show GET requests to /api/connections instead of POST requests to /api/connect. This prevents users from connecting with others on the platform. The issue appears to be that the event.preventDefault() and event.stopPropagation() fixes are not working in the production environment."
 
   - task: "Jobs & Employment Frontend"
     implemented: true
