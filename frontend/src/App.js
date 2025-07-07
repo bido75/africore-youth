@@ -1828,7 +1828,36 @@ function DiscoverView({ token, setCurrentView }) {
       
       if (response.ok) {
         const data = await response.json();
-        setUsers(data.users || []);
+        let usersList = data.users || [];
+        
+        // Try to get existing connections to set proper status
+        try {
+          const connectionsResponse = await fetch(`${API_URL}/api/connections`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (connectionsResponse.ok) {
+            const connectionsData = await connectionsResponse.json();
+            const connectedUserIds = (connectionsData.connections || []).map(conn => conn.user_id || conn.target_user_id);
+            
+            // Update user list with connection status
+            usersList = usersList.map(user => ({
+              ...user,
+              connection_status: connectedUserIds.includes(user.user_id) ? 'connected' : 'none'
+            }));
+          }
+        } catch (connectionsError) {
+          console.log('Could not fetch connections, showing all users as available to connect');
+          // If connections fetch fails, just show users without connection status
+          usersList = usersList.map(user => ({
+            ...user,
+            connection_status: 'none'
+          }));
+        }
+        
+        setUsers(usersList);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
