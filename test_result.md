@@ -234,9 +234,9 @@ frontend:
 
   - task: "User Discovery & Connections Frontend"
     implemented: true
-    working: true
+    working: false
     file: "/app/frontend/src/App.js"
-    stuck_count: 1
+    stuck_count: 2
     priority: "high"
     needs_retesting: false
     status_history:
@@ -249,6 +249,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "User discovery is now working correctly. Users can browse other users, search/filter by name and country, and connect with other users. The connections feature works as expected."
+      - working: false
+        agent: "testing"
+        comment: "Critical issue found with the Connect button functionality. The button is visible and can be clicked, but it doesn't change state to 'Pending...' after clicking. Investigation revealed a parameter name mismatch between frontend and backend: the frontend sends 'user_id' but the backend API expects 'target_user_id'. This prevents users from connecting with others on the platform."
 
   - task: "Jobs & Employment Frontend"
     implemented: true
