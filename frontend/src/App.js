@@ -3281,3 +3281,343 @@ function MyContributionsView({ token }) {
     </div>
   );
 }
+
+// Create Course Component - MISSING IMPLEMENTATION
+function CreateCourseView({ token, setCurrentView }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    difficulty_level: '',
+    duration: '',
+    price: '',
+    skills_covered: '',
+    prerequisites: '',
+    learning_objectives: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const courseData = {
+        ...formData,
+        price: parseFloat(formData.price) || 0,
+        skills_covered: formData.skills_covered.split(',').map(skill => skill.trim()).filter(skill => skill),
+        prerequisites: formData.prerequisites.split('\n').filter(req => req.trim()),
+        learning_objectives: formData.learning_objectives.split('\n').filter(obj => obj.trim()),
+        certification_available: true
+      };
+
+      const response = await fetch(`${API_URL}/api/courses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(courseData)
+      });
+
+      if (response.ok) {
+        setMessage('Course created successfully!');
+        setTimeout(() => setCurrentView('education'), 2000);
+      } else {
+        const error = await response.json();
+        setMessage(error.detail || 'Failed to create course');
+      }
+    } catch (error) {
+      setMessage('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">📖 Create Course</h2>
+      
+      {message && (
+        <div className={`p-4 rounded-lg mb-4 ${message.includes('success') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          {message}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Course Title</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Category</option>
+              <option value="technology">Technology</option>
+              <option value="business">Business</option>
+              <option value="design">Design</option>
+              <option value="marketing">Marketing</option>
+              <option value="finance">Finance</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="education">Education</option>
+              <option value="agriculture">Agriculture</option>
+              <option value="environment">Environment</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty Level</label>
+            <select
+              name="difficulty_level"
+              value={formData.difficulty_level}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select Difficulty</option>
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
+            <input
+              type="text"
+              name="duration"
+              value={formData.duration}
+              onChange={handleChange}
+              placeholder="e.g., 8 weeks, 40 hours"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Price ($)</label>
+            <input
+              type="number"
+              name="price"
+              value={formData.price}
+              onChange={handleChange}
+              min="0"
+              step="0.01"
+              placeholder="0 for free"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Course Description</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows="4"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Skills Covered (comma-separated)</label>
+          <input
+            type="text"
+            name="skills_covered"
+            value={formData.skills_covered}
+            onChange={handleChange}
+            placeholder="JavaScript, React, Node.js, Database Design"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Prerequisites (one per line)</label>
+          <textarea
+            name="prerequisites"
+            value={formData.prerequisites}
+            onChange={handleChange}
+            rows="3"
+            placeholder="Basic computer knowledge&#10;High school mathematics&#10;English proficiency"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Learning Objectives (one per line)</label>
+          <textarea
+            name="learning_objectives"
+            value={formData.learning_objectives}
+            onChange={handleChange}
+            rows="4"
+            placeholder="Build responsive web applications&#10;Understand modern development practices&#10;Deploy applications to production&#10;Work with databases effectively"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+
+        <div className="flex space-x-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-indigo-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Creating...' : 'Create Course'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentView('education')}
+            className="bg-gray-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-600 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// My Courses Component - MISSING IMPLEMENTATION
+function MyCoursesView({ token }) {
+  const [enrollments, setEnrollments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMyEnrollments();
+  }, []);
+
+  const fetchMyEnrollments = async () => {
+    try {
+      // Try the primary endpoint first
+      let response = await fetch(`${API_URL}/api/enrollments`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      // If primary endpoint fails, try alternative endpoint
+      if (!response.ok) {
+        response = await fetch(`${API_URL}/api/courses/my-courses`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+      
+      if (response.ok) {
+        const data = await response.json();
+        setEnrollments(data.enrollments || data.courses || []);
+      }
+    } catch (error) {
+      console.error('Error fetching enrollments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your courses...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const completedCourses = enrollments.filter(e => e.completion_status === 'completed').length;
+  const inProgressCourses = enrollments.filter(e => e.completion_status === 'in_progress').length;
+
+  return (
+    <div className="bg-white rounded-xl shadow-md p-6">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">📚 My Courses</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-indigo-50 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-indigo-800 mb-2">In Progress</h3>
+          <p className="text-2xl font-bold text-indigo-600">{inProgressCourses}</p>
+          <p className="text-indigo-700">courses</p>
+        </div>
+        <div className="bg-green-50 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-green-800 mb-2">Completed</h3>
+          <p className="text-2xl font-bold text-green-600">{completedCourses}</p>
+          <p className="text-green-700">courses</p>
+        </div>
+      </div>
+
+      {enrollments.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">📚</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No enrollments yet</h3>
+          <p className="text-gray-600">Start learning by enrolling in courses!</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {enrollments.map(enrollment => (
+            <div key={enrollment.enrollment_id || enrollment.course_id} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="font-semibold text-gray-800">{enrollment.course_title || enrollment.title}</h3>
+                  <p className="text-sm text-gray-600">by {enrollment.instructor_name || 'Unknown Instructor'}</p>
+                  <p className="text-sm text-gray-500">Enrolled {enrollment.enrolled_at ? new Date(enrollment.enrolled_at).toLocaleDateString() : 'Recently'}</p>
+                </div>
+                <span className={`inline-block px-3 py-1 rounded-full text-sm ${
+                  enrollment.completion_status === 'completed' ? 'bg-green-100 text-green-800' :
+                  enrollment.completion_status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {enrollment.completion_status === 'completed' ? '✓ Completed' :
+                   enrollment.completion_status === 'in_progress' ? '⏳ In Progress' :
+                   '📚 Enrolled'}
+                </span>
+              </div>
+
+              {enrollment.progress_percentage !== undefined && (
+                <div className="mb-3">
+                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>Progress</span>
+                    <span>{enrollment.progress_percentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-indigo-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${enrollment.progress_percentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
