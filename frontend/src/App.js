@@ -3621,5 +3621,3 @@ function MyCoursesView({ token }) {
     </div>
   );
 }
-
-export default App;
