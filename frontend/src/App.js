@@ -1969,12 +1969,16 @@ function DiscoverView({ token, setCurrentView }) {
                 </button>
               ) : (
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    e.nativeEvent.stopImmediatePropagation();
+                    console.log('Connect button clicked for user:', user.user_id);
                     connectWithUser(user.user_id);
                   }}
                   className="flex-1 bg-orange-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   Connect
                 </button>
