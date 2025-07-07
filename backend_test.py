@@ -1118,7 +1118,7 @@ class AuthenticationTest(unittest.TestCase):
         
         # Save token for next tests
         self.__class__.token = data["access_token"]
-        print(f"✅ Specific user registration successful: test@example.com")
+        print(f"✅ Specific user registration successful: junior@example.com")
 
     def test_02_login_specific_user(self):
         """Test user login with specific test credentials"""
