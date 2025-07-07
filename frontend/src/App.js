@@ -1855,6 +1855,10 @@ function DiscoverView({ token, setCurrentView }) {
             ? { ...user, connection_status: 'pending' }
             : user
         ));
+        console.log('Connection request sent successfully');
+      } else {
+        const errorData = await response.json();
+        console.error('Connection failed:', errorData);
       }
     } catch (error) {
       console.error('Error connecting with user:', error);
