@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://631d4401-442b-4235-96d9-59ab05a2a184.preview.emergentagent.com"
+BACKEND_URL = "http://localhost:8001"
 
 # Set to True to print detailed API responses for debugging
 DEBUG = False
