@@ -1813,13 +1813,30 @@ function DiscoverView({ token, setCurrentView }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    fetchUsers();
+    fetchCurrentUserAndUsers();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchCurrentUserAndUsers = async () => {
     try {
+      // First get current user info
+      const profileResponse = await fetch(`${API_URL}/api/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      let currentUserId = null;
+      if (profileResponse.ok) {
+        const currentUserData = await profileResponse.json();
+        setCurrentUser(currentUserData);
+        currentUserId = currentUserData.user_id;
+        console.log('🔍 Current user ID:', currentUserId);
+      }
+
+      // Then fetch all users
       const response = await fetch(`${API_URL}/api/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -1829,6 +1846,14 @@ function DiscoverView({ token, setCurrentView }) {
       if (response.ok) {
         const data = await response.json();
         let usersList = data.users || [];
+        
+        console.log('📋 All users fetched:', usersList.length);
+        console.log('📋 Users list:', usersList.map(u => ({ id: u.user_id, name: u.full_name, email: u.email })));
+        
+        // Filter out current user from discovery
+        usersList = usersList.filter(user => user.user_id !== currentUserId);
+        
+        console.log('📋 Users after filtering current user:', usersList.length);
         
         // Try to get existing connections to set proper status
         try {
@@ -1842,6 +1867,8 @@ function DiscoverView({ token, setCurrentView }) {
             const connectionsData = await connectionsResponse.json();
             const connectedUserIds = (connectionsData.connections || []).map(conn => conn.user_id || conn.target_user_id);
             
+            console.log('🔗 Connected user IDs:', connectedUserIds);
+            
             // Update user list with connection status
             usersList = usersList.map(user => ({
               ...user,
@@ -1849,7 +1876,7 @@ function DiscoverView({ token, setCurrentView }) {
             }));
           }
         } catch (connectionsError) {
-          console.log('Could not fetch connections, showing all users as available to connect');
+          console.log('⚠️ Could not fetch connections, showing all users as available to connect');
           // If connections fetch fails, just show users without connection status
           usersList = usersList.map(user => ({
             ...user,
@@ -1857,10 +1884,13 @@ function DiscoverView({ token, setCurrentView }) {
           }));
         }
         
+        console.log('📋 Final users list for discovery:', usersList);
         setUsers(usersList);
+      } else {
+        console.error('❌ Failed to fetch users:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('💥 Error fetching users:', error);
     } finally {
       setLoading(false);
     }
