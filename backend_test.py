@@ -1089,7 +1089,7 @@ class AuthenticationTest(unittest.TestCase):
         # This is just a test helper, not part of the actual test
         try:
             payload = {
-                "email": "test@example.com",
+                "email": "junior@example.com",
                 "password": "password123"
             }
             requests.post(f"{BACKEND_URL}/api/login", json=payload)
@@ -1101,9 +1101,9 @@ class AuthenticationTest(unittest.TestCase):
             
         # Now register the user with specific credentials
         payload = {
-            "email": "test@example.com",
+            "email": "junior@example.com",
             "password": "password123",
-            "full_name": "Test User",
+            "full_name": "Junior Test User",
             "country": "Nigeria",
             "age": 25
         }
