@@ -1152,8 +1152,8 @@ class AuthenticationTest(unittest.TestCase):
         data = response.json()
         
         # Verify profile data matches the registered user
-        self.assertEqual(data["email"], "test@example.com", "Email doesn't match")
-        self.assertEqual(data["full_name"], "Test User", "Full name doesn't match")
+        self.assertEqual(data["email"], "junior@example.com", "Email doesn't match")
+        self.assertEqual(data["full_name"], "Junior Test User", "Full name doesn't match")
         self.assertEqual(data["country"], "Nigeria", "Country doesn't match")
         self.assertEqual(data["age"], 25, "Age doesn't match")
         
