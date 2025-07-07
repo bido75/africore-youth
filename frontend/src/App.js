@@ -371,6 +371,8 @@ function MyCivicParticipationView({ token }) {
         </div>
       )}
     </div>
+  );
+}
 
 // Education/Courses with Full CRUD
 function CoursesView({ token, user, setCurrentView }) {
