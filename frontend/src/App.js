@@ -2031,15 +2031,33 @@ function DiscoverView({ token, setCurrentView }) {
               ) : (
                 <button
                   type="button"
-                  onClick={(e) => {
+                  className="flex-1 bg-orange-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
+                  onClick={async (e) => {
+                    // Completely isolate button click
                     e.preventDefault();
                     e.stopPropagation();
                     e.nativeEvent.stopImmediatePropagation();
-                    console.log('Connect button clicked for user:', user.user_id);
-                    connectWithUser(user.user_id);
+                    
+                    console.log('🔥 CONNECT BUTTON CLICKED - User ID:', user.user_id);
+                    
+                    // Disable the button immediately to prevent double clicks
+                    e.target.disabled = true;
+                    e.target.textContent = 'Connecting...';
+                    
+                    try {
+                      await connectWithUser(user.user_id);
+                    } catch (error) {
+                      console.error('Connect error:', error);
+                      // Re-enable button on error
+                      e.target.disabled = false;
+                      e.target.textContent = 'Connect';
+                    }
                   }}
-                  className="flex-1 bg-orange-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
-                  style={{ pointerEvents: 'auto' }}
+                  style={{ 
+                    pointerEvents: 'auto',
+                    position: 'relative',
+                    zIndex: 10
+                  }}
                 >
                   Connect
                 </button>
