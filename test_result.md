@@ -171,11 +171,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Policy creation, voting, feedback endpoints active"
+      - working: true
+        agent: "testing"
+        comment: "All Civic Engagement endpoints tested and working: /api/policies, /api/policies/{policy_id}, /api/policies/{policy_id}/vote, /api/policies/{policy_id}/feedback, /api/civic/my-participation, /api/civic/leaderboard. Successfully created a policy, voted on it, and provided feedback."
 
   - task: "Education & Learning System"
     implemented: true
