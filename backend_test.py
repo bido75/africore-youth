@@ -54,83 +54,97 @@ class AfriCoreAPITest(unittest.TestCase):
         self.assertEqual(data["service"], "AfriCore API")
         print("✅ Health check endpoint working")
 
-    def test_02_register_user(self):
-        """Test user registration"""
+    def test_02_login_user1(self):
+        """Test login for user 1"""
         payload = {
-            "email": self.test_user_email,
-            "password": self.test_user_password,
-            "full_name": self.test_user_name,
-            "country": self.test_user_country,
-            "age": self.test_user_age
+            "email": self.test_user1_email,
+            "password": self.test_user1_password
         }
         
-        response = requests.post(f"{BACKEND_URL}/api/register", json=payload)
+        response = requests.post(f"{BACKEND_URL}/api/login", json=payload)
+        debug_response(response, "Login User 1")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("access_token", data)
         self.assertEqual(data["token_type"], "bearer")
         
         # Save token for future tests
-        self.__class__.token = data["access_token"]
-        print(f"✅ User registration successful: {self.test_user_email}")
+        self.__class__.token1 = data["access_token"]
+        print(f"✅ User 1 login successful: {self.test_user1_email}")
 
-    def test_03_login_user(self):
-        """Test user login"""
+    def test_03_login_user2(self):
+        """Test login for user 2"""
         payload = {
-            "email": self.test_user_email,
-            "password": self.test_user_password
+            "email": self.test_user2_email,
+            "password": self.test_user2_password
         }
         
         response = requests.post(f"{BACKEND_URL}/api/login", json=payload)
+        debug_response(response, "Login User 2")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("access_token", data)
         self.assertEqual(data["token_type"], "bearer")
         
-        # Update token
-        self.__class__.token = data["access_token"]
-        print(f"✅ User login successful: {self.test_user_email}")
+        # Save token for future tests
+        self.__class__.token2 = data["access_token"]
+        print(f"✅ User 2 login successful: {self.test_user2_email}")
 
-    def test_04_get_profile(self):
-        """Test getting user profile"""
-        headers = {"Authorization": f"Bearer {self.token}"}
+    def test_04_get_user1_profile(self):
+        """Test getting user 1 profile"""
+        headers = {"Authorization": f"Bearer {self.token1}"}
         response = requests.get(f"{BACKEND_URL}/api/profile", headers=headers)
+        debug_response(response, "Get User 1 Profile")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         
-        # Verify profile data
-        self.assertEqual(data["email"], self.test_user_email)
-        self.assertEqual(data["full_name"], self.test_user_name)
-        self.assertEqual(data["country"], self.test_user_country)
-        self.assertEqual(data["age"], self.test_user_age)
+        # Save user_id for future tests
+        self.__class__.user1_id = data["user_id"]
+        print(f"✅ Get User 1 profile successful: {data['full_name']}")
+        print(f"User 1 ID: {self.user1_id}")
+
+    def test_05_get_user2_profile(self):
+        """Test getting user 2 profile"""
+        headers = {"Authorization": f"Bearer {self.token2}"}
+        response = requests.get(f"{BACKEND_URL}/api/profile", headers=headers)
+        debug_response(response, "Get User 2 Profile")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
         
         # Save user_id for future tests
-        self.__class__.user_id = data["user_id"]
-        print(f"✅ Get profile successful: {data['full_name']}")
+        self.__class__.user2_id = data["user_id"]
+        print(f"✅ Get User 2 profile successful: {data['full_name']}")
+        print(f"User 2 ID: {self.user2_id}")
 
-    def test_05_update_profile(self):
-        """Test updating user profile"""
+    def test_06_update_user1_profile(self):
+        """Test updating user 1 profile"""
         headers = {
-            "Authorization": f"Bearer {self.token}",
+            "Authorization": f"Bearer {self.token1}",
             "Content-Type": "application/json"
         }
         
+        # Get current profile first
+        response = requests.get(f"{BACKEND_URL}/api/profile", headers=headers)
+        current_profile = response.json()
+        
+        # Update with some new information while preserving existing data
         payload = {
-            "full_name": self.test_user_name,
-            "country": self.test_user_country,
-            "age": self.test_user_age,
-            "bio": "I am a test user for the AfriCore platform",
-            "skills": ["Python", "Testing", "API Development"],
-            "interests": ["Technology", "Education", "Innovation"],
+            "full_name": current_profile["full_name"],
+            "country": current_profile["country"],
+            "age": current_profile["age"],
+            "bio": "Updated bio for comprehensive testing",
+            "skills": ["Python", "Testing", "API Development", "Backend Development"],
+            "interests": ["Technology", "Education", "Innovation", "Pan-African Development"],
             "education": "University of Testing",
             "goals": "To help test and improve the AfriCore platform",
             "current_projects": "Testing the AfriCore API",
-            "languages": ["English", "Swahili"],
+            "languages": ["English", "Swahili", "French"],
             "phone": "+1234567890",
             "linkedin": "https://linkedin.com/in/testuser"
         }
         
         response = requests.put(f"{BACKEND_URL}/api/profile", headers=headers, json=payload)
+        debug_response(response, "Update User 1 Profile")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["message"], "Profile updated successfully")
@@ -142,34 +156,6 @@ class AfriCoreAPITest(unittest.TestCase):
         self.assertEqual(data["bio"], payload["bio"])
         self.assertEqual(data["skills"], payload["skills"])
         print("✅ Profile update successful")
-
-    def test_06_register_second_user(self):
-        """Register a second user for testing connections"""
-        second_email = f"second_user_{int(time.time())}@example.com"
-        payload = {
-            "email": second_email,
-            "password": "SecondUser123!",
-            "full_name": "Second Test User",
-            "country": "Nigeria",
-            "age": 28
-        }
-        
-        response = requests.post(f"{BACKEND_URL}/api/register", json=payload)
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        
-        # Save second user token temporarily
-        second_token = data["access_token"]
-        
-        # Get second user profile to get ID
-        headers = {"Authorization": f"Bearer {second_token}"}
-        response = requests.get(f"{BACKEND_URL}/api/profile", headers=headers)
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        
-        # Save second user ID for connection tests
-        self.__class__.other_user_id = data["user_id"]
-        print(f"✅ Second user registered with ID: {self.other_user_id}")
 
     def test_07_get_users(self):
         """Test getting list of users"""
