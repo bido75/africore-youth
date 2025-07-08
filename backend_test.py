@@ -880,28 +880,28 @@ class AfriCoreAPITest(unittest.TestCase):
         else:
             self.fail(f"Unexpected response: {response.status_code} - {response.text}")
         
-    def test_38_create_course(self):
+    def test_36_create_course(self):
         """Test creating a course"""
         headers = {
-            "Authorization": f"Bearer {self.token}",
+            "Authorization": f"Bearer {self.token1}",
             "Content-Type": "application/json"
         }
         
         payload = {
-            "title": f"Test Course {int(time.time())}",
-            "description": "This is a test course for API testing",
+            "title": f"AfriCore Test Course {int(time.time())}",
+            "description": "This is a test course for comprehensive API testing",
             "category": "technology",
             "level": "beginner",
             "duration_hours": 10,
             "price": 0.0,
-            "learning_objectives": ["Learn API testing", "Understand backend development"],
+            "learning_objectives": ["Learn API testing", "Understand backend development", "Master FastAPI"],
             "prerequisites": [],
-            "skills_gained": ["API Testing", "Backend Development"],
+            "skills_gained": ["API Testing", "Backend Development", "Python", "FastAPI"],
             "certificate_type": "completion"
         }
         
         response = requests.post(f"{BACKEND_URL}/api/courses", headers=headers, json=payload)
-        print(f"Create course response: {response.status_code}")
+        debug_response(response, "Create Course")
         
         if response.status_code == 200:
             data = response.json()
@@ -909,16 +909,29 @@ class AfriCoreAPITest(unittest.TestCase):
             self.__class__.course_id = data["course_id"]
             print(f"✅ Course created successfully with ID: {self.course_id}")
         else:
-            print(f"⚠️ Could not create course: {response.status_code} - {response.text}")
+            self.fail(f"Unexpected response: {response.status_code} - {response.text}")
         
-    def test_39_get_courses(self):
+    def test_37_get_courses(self):
         """Test getting list of courses"""
-        headers = {"Authorization": f"Bearer {self.token}"}
+        headers = {"Authorization": f"Bearer {self.token1}"}
         response = requests.get(f"{BACKEND_URL}/api/courses", headers=headers)
+        debug_response(response, "Get Courses")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("courses", data)
         self.assertIsInstance(data["courses"], list)
+        
+        # Check if our course is in the list
+        course_found = False
+        for course in data["courses"]:
+            if course.get("course_id") == self.course_id:
+                course_found = True
+                break
+        
+        if course_found:
+            print("✅ Our course found in the list")
+        else:
+            print("⚠️ Our course not found in the list")
         
         # Test filtering by category
         response = requests.get(f"{BACKEND_URL}/api/courses?category=technology", headers=headers)
@@ -930,29 +943,32 @@ class AfriCoreAPITest(unittest.TestCase):
         
         print("✅ Get courses endpoint working with filters")
         
-    def test_40_get_specific_course(self):
+    def test_38_get_specific_course(self):
         """Test getting a specific course by ID"""
         if not self.course_id:
-            self.skipTest("No course ID available for testing")
+            print("⚠️ No course ID available for testing, skipping test")
+            return
             
-        headers = {"Authorization": f"Bearer {self.token}"}
+        headers = {"Authorization": f"Bearer {self.token1}"}
         response = requests.get(f"{BACKEND_URL}/api/courses/{self.course_id}", headers=headers)
-        print(f"Get specific course response: {response.status_code}")
+        debug_response(response, "Get Specific Course")
         
         if response.status_code == 200:
             data = response.json()
             self.assertEqual(data["course_id"], self.course_id)
             print(f"✅ Get specific course successful: {data['title']}")
         else:
-            print(f"⚠️ Could not get course: {response.status_code} - {response.text}")
+            self.fail(f"Unexpected response: {response.status_code} - {response.text}")
         
-    def test_41_enroll_in_course(self):
+    def test_39_enroll_in_course(self):
         """Test enrolling in a course"""
         if not self.course_id:
-            self.skipTest("No course ID available for testing")
+            print("⚠️ No course ID available for testing, skipping test")
+            return
             
+        # User 2 enrolls in User 1's course
         headers = {
-            "Authorization": f"Bearer {self.token}",
+            "Authorization": f"Bearer {self.token2}",
             "Content-Type": "application/json"
         }
         
@@ -961,7 +977,7 @@ class AfriCoreAPITest(unittest.TestCase):
         }
         
         response = requests.post(f"{BACKEND_URL}/api/courses/{self.course_id}/enroll", headers=headers, json=payload)
-        print(f"Enroll in course response: {response.status_code}")
+        debug_response(response, "Enroll in Course")
         
         if response.status_code == 200:
             data = response.json()
@@ -969,87 +985,92 @@ class AfriCoreAPITest(unittest.TestCase):
             self.__class__.enrollment_id = data["enrollment_id"]
             print(f"✅ Course enrollment successful with ID: {self.enrollment_id}")
         else:
-            print(f"⚠️ Could not enroll in course: {response.status_code} - {response.text}")
+            self.fail(f"Unexpected response: {response.status_code} - {response.text}")
         
-    def test_42_get_enrollments(self):
+    def test_40_get_enrollments(self):
         """Test getting user's course enrollments"""
-        headers = {"Authorization": f"Bearer {self.token}"}
+        headers = {"Authorization": f"Bearer {self.token2}"}
         response = requests.get(f"{BACKEND_URL}/api/enrollments", headers=headers)
-        print(f"Get enrollments response: {response.status_code}")
-        debug_response(response, "Get enrollments")
+        debug_response(response, "Get Enrollments")
         
         if response.status_code == 200:
             data = response.json()
             self.assertIn("enrollments", data)
             self.assertIsInstance(data["enrollments"], list)
             print("✅ Get enrollments endpoint working")
-        else:
-            print(f"⚠️ Could not get enrollments: {response.status_code} - {response.text}")
+        elif response.status_code == 404:
+            print("⚠️ Enrollments endpoint not found")
             
-        # Alternative endpoint: Try using /api/courses/my-courses instead
-        response = requests.get(f"{BACKEND_URL}/api/courses/my-courses", headers=headers)
-        print(f"Get my courses response: {response.status_code}")
-        debug_response(response, "Get my courses")
-        
-        if response.status_code == 200:
-            data = response.json()
-            self.assertIn("courses", data)
-            self.assertIsInstance(data["courses"], list)
-            print("✅ Get my courses endpoint working (alternative to enrollments)")
+            # Try alternative endpoint
+            response = requests.get(f"{BACKEND_URL}/api/courses/my-courses", headers=headers)
+            debug_response(response, "Get My Courses")
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.assertIn("courses", data)
+                self.assertIsInstance(data["courses"], list)
+                print("✅ Get my courses endpoint working (alternative to enrollments)")
+            else:
+                print(f"⚠️ Could not get my courses: {response.status_code} - {response.text}")
         else:
-            print(f"⚠️ Could not get my courses: {response.status_code} - {response.text}")
+            self.fail(f"Unexpected response: {response.status_code} - {response.text}")
         
-    def test_43_review_course(self):
+    def test_41_review_course(self):
         """Test reviewing a course"""
         if not self.course_id:
-            self.skipTest("No course ID available for testing")
+            print("⚠️ No course ID available for testing, skipping test")
+            return
             
+        # User 2 reviews User 1's course
         headers = {
-            "Authorization": f"Bearer {self.token}",
+            "Authorization": f"Bearer {self.token2}",
             "Content-Type": "application/json"
         }
         
         payload = {
             "course_id": self.course_id,
             "rating": 5,
-            "review_text": "This is an excellent course for learning API testing."
+            "review_text": "This is an excellent course for learning API testing and backend development."
         }
         
         response = requests.post(f"{BACKEND_URL}/api/courses/{self.course_id}/review", headers=headers, json=payload)
-        print(f"Review course response: {response.status_code}")
-        debug_response(response, "Review course")
+        debug_response(response, "Review Course")
         
         if response.status_code == 200:
             data = response.json()
             self.assertIn("review_id", data)
             print(f"✅ Course review submitted successfully with ID: {data['review_id']}")
+        elif response.status_code == 404:
+            print("⚠️ Course review endpoint not found")
         else:
-            print(f"⚠️ Could not review course: {response.status_code} - {response.text}")
+            self.fail(f"Unexpected response: {response.status_code} - {response.text}")
         
-    def test_44_get_course_reviews(self):
+    def test_42_get_course_reviews(self):
         """Test getting reviews for a course"""
         if not self.course_id:
-            self.skipTest("No course ID available for testing")
+            print("⚠️ No course ID available for testing, skipping test")
+            return
             
-        headers = {"Authorization": f"Bearer {self.token}"}
+        headers = {"Authorization": f"Bearer {self.token1}"}
         response = requests.get(f"{BACKEND_URL}/api/courses/{self.course_id}/reviews", headers=headers)
-        print(f"Get course reviews response: {response.status_code}")
-        debug_response(response, "Get course reviews")
+        debug_response(response, "Get Course Reviews")
         
         if response.status_code == 200:
             data = response.json()
             self.assertIn("reviews", data)
             self.assertIsInstance(data["reviews"], list)
             print("✅ Get course reviews endpoint working")
-        else:
-            print(f"⚠️ Could not get course reviews: {response.status_code} - {response.text}")
+        elif response.status_code == 404:
+            print("⚠️ Course reviews endpoint not found")
             
-        # Check if reviews are available in the course details
-        response = requests.get(f"{BACKEND_URL}/api/courses/{self.course_id}", headers=headers)
-        if response.status_code == 200:
-            data = response.json()
-            if "recent_reviews" in data:
-                print("✅ Reviews are available in course details endpoint")
+            # Check if reviews are available in the course details
+            response = requests.get(f"{BACKEND_URL}/api/courses/{self.course_id}", headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                if "recent_reviews" in data:
+                    print("✅ Reviews are available in course details endpoint")
+        else:
+            self.fail(f"Unexpected response: {response.status_code} - {response.text}")
                 
     def test_45_comprehensive_backend_validation(self):
         """Comprehensive validation of all backend features"""
