@@ -281,150 +281,207 @@ class AfriCoreAPITest(unittest.TestCase):
         else:
             self.fail(f"Unexpected response: {response.status_code} - {response.text}")
 
-    def test_12_messaging_endpoints(self):
-        """Test messaging endpoints (these might not be fully implemented yet)"""
+    def test_12_register_organization(self):
+        """Test registering an organization"""
         headers = {
-            "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json"
-        }
-        
-        # Try to send a message
-        payload = {
-            "recipient_id": self.other_user_id,
-            "content": "Hello! This is a test message."
-        }
-        
-        response = requests.post(f"{BACKEND_URL}/api/messages", headers=headers, json=payload)
-        print(f"Send message response: {response.status_code}")
-        
-        # Try to get messages
-        response = requests.get(f"{BACKEND_URL}/api/messages/{self.other_user_id}", headers=headers)
-        print(f"Get messages response: {response.status_code}")
-        
-        # Note: These tests might fail if users aren't connected or if messaging is not fully implemented
-        print("ℹ️ Messaging endpoints tested (may not be fully implemented)")
-
-    def test_13_create_project(self):
-        """Test creating a new project"""
-        headers = {
-            "Authorization": f"Bearer {self.token}",
+            "Authorization": f"Bearer {self.token1}",
             "Content-Type": "application/json"
         }
         
         payload = {
-            "title": f"Test Project {int(time.time())}",
-            "description": "This is a test project created for API testing",
-            "category": "education",
-            "funding_goal": 5000.0,
-            "funding_goal_type": "fixed",
-            "duration_months": 6,
-            "location": "Nairobi, Kenya",
-            "impact_description": "This project will help test the AfriFund DAO platform",
-            "budget_breakdown": "Development: $3000\nTesting: $2000",
-            "milestones": ["Month 1: Setup", "Month 3: Development", "Month 6: Completion"],
-            "images": [],
-            "team_members": "Test Team",
-            "risks_challenges": "None, this is just a test",
-            "sustainability_plan": "This is a test project"
+            "name": f"AfriCore Test Organization {int(time.time())}",
+            "description": "This is a test organization for comprehensive API testing",
+            "organization_type": "startup",
+            "country": "Ghana",
+            "website": "https://africore-test.example.com",
+            "contact_email": f"contact_{int(time.time())}@example.com",
+            "contact_phone": "+1234567890",
+            "size": "1-10 employees",
+            "founded_year": 2023
         }
         
-        response = requests.post(f"{BACKEND_URL}/api/projects", headers=headers, json=payload)
+        response = requests.post(f"{BACKEND_URL}/api/organization/register", headers=headers, json=payload)
+        debug_response(response, "Register Organization")
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("project_id", data)
-        self.assertEqual(data["message"], "Project proposal submitted successfully")
+        self.assertIn("organization_id", data)
+        self.assertEqual(data["message"], "Organization registered successfully")
         
-        # Save project ID for future tests
-        self.__class__.project_id = data["project_id"]
-        print(f"✅ Project created successfully with ID: {self.project_id}")
-
-    def test_14_get_projects(self):
-        """Test getting list of projects"""
-        headers = {"Authorization": f"Bearer {self.token}"}
-        response = requests.get(f"{BACKEND_URL}/api/projects", headers=headers)
+        # Save organization ID for future tests
+        self.__class__.organization_id = data["organization_id"]
+        print(f"✅ Organization registered successfully with ID: {self.organization_id}")
+        
+    def test_13_get_organizations(self):
+        """Test getting list of organizations"""
+        headers = {"Authorization": f"Bearer {self.token1}"}
+        response = requests.get(f"{BACKEND_URL}/api/organizations", headers=headers)
+        debug_response(response, "Get Organizations")
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("projects", data)
-        self.assertIsInstance(data["projects"], list)
+        self.assertIn("organizations", data)
+        self.assertIsInstance(data["organizations"], list)
         
-        # Test filtering by category
-        response = requests.get(f"{BACKEND_URL}/api/projects?category=education", headers=headers)
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        for project in data["projects"]:
-            if project["category"] == "education":
-                print(f"Found education project: {project['title']}")
-        
-        print("✅ Get projects endpoint working with filters")
-
-    def test_15_get_my_projects(self):
-        """Test getting user's own projects"""
-        headers = {"Authorization": f"Bearer {self.token}"}
-        response = requests.get(f"{BACKEND_URL}/api/projects/my", headers=headers)
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIn("projects", data)
-        self.assertIsInstance(data["projects"], list)
-        
-        # Verify our created project is in the list
-        project_found = False
-        for project in data["projects"]:
-            if project["project_id"] == self.project_id:
-                project_found = True
+        # Check if our organization is in the list
+        org_found = False
+        for org in data["organizations"]:
+            if org.get("organization_id") == self.organization_id:
+                org_found = True
                 break
         
-        self.assertTrue(project_found, "Created project not found in my projects list")
-        print("✅ Get my projects endpoint working")
-
-    def test_16_get_specific_project(self):
-        """Test getting a specific project by ID"""
-        if not self.project_id:
-            self.skipTest("No project ID available for testing")
-            
-        headers = {"Authorization": f"Bearer {self.token}"}
-        response = requests.get(f"{BACKEND_URL}/api/projects/{self.project_id}", headers=headers)
+        if org_found:
+            print("✅ Our organization found in the list")
+        else:
+            print("⚠️ Our organization not found in the list")
+        
+        # Test filtering by organization type
+        response = requests.get(f"{BACKEND_URL}/api/organizations?org_type=startup", headers=headers)
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["project_id"], self.project_id)
-        print(f"✅ Get specific project successful: {data['title']}")
-
-    def test_17_contribute_to_project(self):
-        """Test contributing to a project"""
-        if not self.project_id:
-            self.skipTest("No project ID available for testing")
+        for org in data["organizations"]:
+            if org["organization_type"] == "startup":
+                print(f"Found startup organization: {org['name']}")
+        
+        print("✅ Get organizations endpoint working with filters")
+        
+    def test_14_create_job(self):
+        """Test creating a job posting"""
+        if not self.organization_id:
+            print("⚠️ No organization ID available for testing, skipping test")
+            return
             
         headers = {
-            "Authorization": f"Bearer {self.token}",
+            "Authorization": f"Bearer {self.token1}",
             "Content-Type": "application/json"
         }
         
         payload = {
-            "project_id": self.project_id,
-            "amount": 100.0,
-            "anonymous": False,
-            "message": "Test contribution"
+            "title": f"AfriCore Test Job {int(time.time())}",
+            "description": "This is a test job posting for comprehensive API testing",
+            "requirements": ["Python", "API Testing", "Documentation", "Backend Development"],
+            "job_type": "full_time",
+            "job_category": "technology",
+            "location_type": "remote",
+            "location": "Pan-African",
+            "salary_range": "$50,000 - $70,000",
+            "skills_required": ["Python", "Testing", "API Development", "FastAPI"],
+            "experience_level": "Mid-level",
+            "benefits": "Flexible hours, Remote work, Professional development"
         }
         
-        # Note: This might fail if the project status is not 'active'
-        response = requests.post(f"{BACKEND_URL}/api/projects/{self.project_id}/contribute", headers=headers, json=payload)
-        print(f"Contribute to project response: {response.status_code}")
+        response = requests.post(f"{BACKEND_URL}/api/jobs", headers=headers, json=payload)
+        debug_response(response, "Create Job")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("job_id", data)
+        self.assertEqual(data["message"], "Job posted successfully")
+        
+        # Save job ID for future tests
+        self.__class__.job_id = data["job_id"]
+        print(f"✅ Job posted successfully with ID: {self.job_id}")
+        
+    def test_15_get_jobs(self):
+        """Test getting list of jobs"""
+        headers = {"Authorization": f"Bearer {self.token1}"}
+        response = requests.get(f"{BACKEND_URL}/api/jobs", headers=headers)
+        debug_response(response, "Get Jobs")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("jobs", data)
+        self.assertIsInstance(data["jobs"], list)
+        
+        # Check if our job is in the list
+        job_found = False
+        for job in data["jobs"]:
+            if job.get("job_id") == self.job_id:
+                job_found = True
+                break
+        
+        if job_found:
+            print("✅ Our job found in the list")
+        else:
+            print("⚠️ Our job not found in the list")
+        
+        # Test filtering by job type
+        response = requests.get(f"{BACKEND_URL}/api/jobs?job_type=full_time", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        for job in data["jobs"]:
+            if job["job_type"] == "full_time":
+                print(f"Found full-time job: {job['title']}")
+        
+        print("✅ Get jobs endpoint working with filters")
+        
+    def test_16_get_specific_job(self):
+        """Test getting a specific job by ID"""
+        if not self.job_id:
+            print("⚠️ No job ID available for testing, skipping test")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.token1}"}
+        response = requests.get(f"{BACKEND_URL}/api/jobs/{self.job_id}", headers=headers)
+        debug_response(response, "Get Specific Job")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["job_id"], self.job_id)
+        print(f"✅ Get specific job successful: {data['title']}")
+        
+    def test_17_apply_for_job(self):
+        """Test applying for a job"""
+        if not self.job_id:
+            print("⚠️ No job ID available for testing, skipping test")
+            return
+            
+        # User 2 applies for the job posted by User 1
+        headers = {
+            "Authorization": f"Bearer {self.token2}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "job_id": self.job_id,
+            "cover_letter": "I am very interested in this position and believe my skills match your requirements.",
+            "portfolio_links": "https://github.com/testapplicant"
+        }
+        
+        response = requests.post(f"{BACKEND_URL}/api/jobs/{self.job_id}/apply", headers=headers, json=payload)
+        debug_response(response, "Apply for Job")
         
         if response.status_code == 200:
             data = response.json()
-            self.assertIn("contribution_id", data)
-            print(f"✅ Contribution successful with ID: {data['contribution_id']}")
+            self.assertIn("application_id", data)
+            self.__class__.application_id = data["application_id"]
+            print(f"✅ Job application successful with ID: {self.application_id}")
+        elif response.status_code == 400 and "already applied" in response.text.lower():
+            print("⚠️ User has already applied for this job")
         else:
-            print(f"⚠️ Could not contribute to project: {response.status_code} - {response.text}")
-
-    def test_18_get_my_contributions(self):
-        """Test getting user's contributions"""
-        headers = {"Authorization": f"Bearer {self.token}"}
-        response = requests.get(f"{BACKEND_URL}/api/contributions/my", headers=headers)
+            self.fail(f"Unexpected response: {response.status_code} - {response.text}")
+        
+    def test_18_get_applications(self):
+        """Test getting user's job applications"""
+        # User 2 checks their applications
+        headers = {"Authorization": f"Bearer {self.token2}"}
+        response = requests.get(f"{BACKEND_URL}/api/applications", headers=headers)
+        debug_response(response, "Get User Applications")
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertIn("contributions", data)
-        self.assertIsInstance(data["contributions"], list)
-        print("✅ Get my contributions endpoint working")
+        self.assertIn("applications", data)
+        self.assertIsInstance(data["applications"], list)
+        print("✅ Get applications endpoint working")
+        
+        # User 1 checks applications for their organization
+        headers = {"Authorization": f"Bearer {self.token1}"}
+        response = requests.get(f"{BACKEND_URL}/api/organization/applications", headers=headers)
+        debug_response(response, "Get Organization Applications")
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.assertIn("applications", data)
+            self.assertIsInstance(data["applications"], list)
+            print("✅ Get organization applications endpoint working")
+        elif response.status_code == 404 and "organization not found" in response.text.lower():
+            print("⚠️ Organization not found for this user")
+        else:
+            self.fail(f"Unexpected response: {response.status_code} - {response.text}")
 
     def test_19_add_project_update(self):
         """Test adding an update to a project"""
