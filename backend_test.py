@@ -27,14 +27,15 @@ def debug_response(response, message="API Response"):
 class AfriCoreAPITest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.test_user_email = f"test_user_{int(time.time())}@example.com"
-        cls.test_user_password = "TestPassword123!"
-        cls.test_user_name = "Test User"
-        cls.test_user_country = "Kenya"
-        cls.test_user_age = 25
-        cls.token = None
-        cls.user_id = None
-        cls.other_user_id = None
+        # Use the provided test accounts
+        cls.test_user1_email = "vincent.kudjoe.1751926316@example.com"
+        cls.test_user1_password = "password123"
+        cls.test_user2_email = "vincent.gbewonyo.1751926316@example.com"
+        cls.test_user2_password = "password123"
+        cls.token1 = None
+        cls.token2 = None
+        cls.user1_id = None
+        cls.user2_id = None
         cls.connection_id = None
         cls.project_id = None
         cls.job_id = None
